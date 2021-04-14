@@ -12,13 +12,15 @@ def addInfo(msg):
     if(T):
         T.config(state=NORMAL)
         T.insert(END, msg)
+        T.config(state=DISABLED)
         T.see(END)
+        T.update()
 
 def scan():
     if len(active_interface) == 0: # no active interface:
-        addInfo("Please choose an interface above before scanning\n")
+        addInfo("Please choose an interface above before scanning\n\n")
     else:
-        result = execute_scan(active_interface)
+        result = execute_scan(active_interface, T)
 
 
 def interface(new_interface):
@@ -94,7 +96,6 @@ tree.configure(yscrollcommand=scroll.set)
 
 # for val in data:
 #     tree.insert('', 'end', values = (val[0], val[1], val[2]) )
-
 
 # Debug / Info section, bottom
 S = tk.Scrollbar(bottom)

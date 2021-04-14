@@ -1,5 +1,19 @@
 import subprocess
 import tkinter as tk
+import re
+from tkinter.ttk import *
+from tkinter import * 
+import time
+import sys
+
+# shows info at text area in main app
+def addToolInfo(T, msg):
+    if(T):
+        T.config(state=NORMAL)
+        T.insert(END, msg)
+        T.config(state=DISABLED)
+        T.see(END)
+        T.update()
 
 # takes a list, removes elements of empty lines / tabs
 def clean(lst):
@@ -24,9 +38,10 @@ def get_interfaces():
 
     return interfaces
 
-# stops the program and warns user about missing libraries/tools requirements
+# stops the program and warns user about missing libraries/tools/requirements
 def stop_and_warn(root, flag):
-    root.withdraw()
+    if root:
+        root.withdraw()
     exitsure = tk.Toplevel()
     msg = ""
     if flag == 0:
@@ -41,5 +56,56 @@ def stop_and_warn(root, flag):
     Exit.grid(column=0, row=2)
 
 
-def execute_scan(interface):
+def enable_monitor(interface):
+    new_name = ''
+    try:
+        res = ""
+        process = subprocess.Popen(["airmon-ng start " + str(interface)], shell=True, stdout=subprocess.PIPE)
+        process.wait()
+
+        for line in process.stdout:
+            res += line.decode()
+        res = clean(res.split("\n"))
+        
+        if "monitor mode vif enabled for" in res[-2]:
+            line = re.sub('\s+',' ',res[-2])
+            new_name = line[0:-1].split(' ')[-1].split(']')[1]
+    except:
+        return -1
+
+    return new_name 
+
+    
+def disbale_monitor(interface):
+    try:
+        subprocess.run(['airmon-ng', 'stop', interface], capture_output=True)
+    except:
+        return -1 
+    return 0
+
+
+def execute_search(interface, info_area):
+
+    return 0
+
+
+def execute_scan(interface, info_area):
+    addToolInfo(info_area, "Executing scan, please wait...\n\n")
+    new_name = enable_monitor(interface)
+
+    if new_name == -1: # should not be the case but to be safe...
+        stop_and_warn(None, 99)
+    else:
+        addToolInfo(info_area, str(interface) + " is now in monitor mode, at " + new_name + "\n\n")
+
+    # perform scan
+    addToolInfo(info_area, "Searching for wireless networks...\n\n")
+    execute_search(interface, info_area)
+    addToolInfo(info_area, "Search done.\n\n")
+
+    if disbale_monitor(new_name) != -1:
+        addToolInfo(info_area, "Monitor mode disabled for " + str(interface) + "\n\n")
+    else:
+        stop_and_warn(None, 99)
+
     return 0

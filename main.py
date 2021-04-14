@@ -6,19 +6,30 @@ from tools import *
 from constants import *
 import pyfiglet
 
+active_interface = ""
+
+def addInfo(msg):
+    if(T):
+        T.config(state=NORMAL)
+        T.insert(END, msg)
+        T.see(END)
 
 def scan():
-	print('clicked')
+    if len(active_interface) == 0: # no active interface:
+        addInfo("Please choose an interface above before scanning\n")
+    else:
+        result = execute_scan(active_interface)
 
 
 def interface(new_interface):
-    print("interface changed")
+    global active_interface
+    active_interface = new_interface[0]
+
 
 
 # USER INTERFACE SECTION
 
 root = Tk()
-startInfo = "" # user info displayed when run if needed, such as modules needed if not installed. 
 
 root.geometry('800x600')
 root.configure(background='#000000')
@@ -39,9 +50,16 @@ scan_btn.pack(side=LEFT, padx=15, pady=15)
 # Interface option
 variable = StringVar(root)
 interfaces = get_interfaces()
-# variable.set("Interface") 
-# interface_list = OptionMenu(top, variable, "one", "two", "three", command=interface)
-# interface_list.pack(side=LEFT)
+
+if interfaces == -1: # user does not have requirements (in this case probably aircrack tools)
+    stop_and_warn(root, 0)
+
+elif len(interfaces) > 0: # user has no wifi interfaces 
+    variable.set("Interface") 
+    interface_list = OptionMenu(top, variable, interfaces, command=interface)
+    interface_list.pack(side=LEFT)
+else:
+    stop_and_warn(root, 1)
 
 # Scanned Networks - mid
 # data = [ ["val1", "val2", "val3"],
@@ -85,7 +103,7 @@ S.pack(side=RIGHT, fill=Y)
 T.pack(side=LEFT, fill=BOTH, expand=True)
 S.config(command=T.yview)
 T.config(yscrollcommand=S.set, highlightthickness=0)
-info_text = "\n\n" + SKULL + "\n" + pyfiglet.figlet_format("WiHack") + " \n" + pyfiglet.figlet_format("Johnny & Anis") + "\nWelcome to WiHack, we hope you enjoy our simple yet powerful tool :))) \n\n " + startInfo
+info_text = "\n\n" + SKULL + "\n" + pyfiglet.figlet_format("WiHack") + " \n" + pyfiglet.figlet_format("Johnny & Anis") + "\nWelcome to WiHack, we hope you enjoy our simple yet powerful tool :))) \n\n"
 T.insert(END, info_text)
 T.config(state=DISABLED)
 T.see(END)

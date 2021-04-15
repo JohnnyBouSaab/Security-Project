@@ -6,6 +6,7 @@ from tkinter import *
 import time
 import sys
 import os
+import globs
 
 # shows info at text area in main app
 def addToolInfo(T, msg):
@@ -58,7 +59,7 @@ def stop_and_warn(root, flag):
 
 
 def enable_monitor(interface):
-    new_name = ''
+    interface_monitor = ''
     try:
         res = ""
         process = subprocess.Popen(["airmon-ng start " + str(interface)], shell=True, stdout=subprocess.PIPE)
@@ -70,11 +71,11 @@ def enable_monitor(interface):
         
         if "monitor mode vif enabled for" in res[-2]:
             line = re.sub('\s+',' ',res[-2])
-            new_name = line[0:-1].split(' ')[-1].split(']')[1]
+            interface_monitor = line[0:-1].split(' ')[-1].split(']')[1]
     except:
         return -1
 
-    return new_name 
+    return interface_monitor 
 
     
 def disable_monitor(interface):
@@ -85,9 +86,7 @@ def disable_monitor(interface):
     return 0
 
 
-def execute_search(interface, info_area):
-    # the number of seconds to wait for airodump output before killing the process, in seconds
-    timeout = 6
+def execute_search(interface, info_area, tree):
 
     # current dir
     cwd = os.path.dirname(os.path.realpath(__file__)) 
@@ -97,31 +96,46 @@ def execute_search(interface, info_area):
     if os.path.exists(out_path):
         os.remove(out_path)
 
-    airodump = subprocess.Popen(('airodump-ng --wps --output-format csv -w out -f 400 ' + interface + "mon").split(" "), \
+    airodump = subprocess.Popen(('airodump-ng --output-format csv -w out -f 400 --write-interval 1 ' + interface).split(" "), \
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, cwd=cwd)
     
-    time.sleep(timeout)
-    airodump.terminate()
+    # print("HERE")
+    while True:
+        if os.path.exists(cwd+"/out-01.csv"):
+            with open("out-01.csv", "r") as f: 
+                networks = []
+                for line in f.readlines()[2:]:
+                    parts = line.split(", ")
+                    if len(parts) < 14:
+                        continue
+                    networks.append({
+                        'name': parts[13],
+                        'encryption': parts[5],
+                        'power': parts[8],
+                        'mac_address': parts[0],
+                        'wps': "-", # parts[],
+                        'channel': parts[3],
+                    })
 
-    table = ''
-    # TODO read the output file, "out-01.csv"
-    with open("out-01.csv", "r") as f:
-        networks = []
-        for line in f.readlines()[2:]:
-            parts = line.split(", ")
-            if len(parts) < 14:
-                continue
-            
-            networks.append({
-                'name': parts[13],
-                'encryption': parts[5],
-                'power': parts[8],
-                'mac_address': parts[0],
-                'wps': "-", # parts[],
-                'channel': parts[3],
-            })
+            # update tree
+            tree.delete(*tree.get_children())
+            for network in networks:
+                tree.insert('', 'end', values = (network["name"], network["encryption"], network["power"], \
+                                            network["mac_address"], network["wps"], network["channel"]) )
+            tree.update()
 
-    return networks
+        # Check for stop scan flag
+        if globs.stop_scanning:
+            airodump.terminate()
+            globs.stop_scanning = False
+            addToolInfo(info_area, "Search done.\n\n")
+            if disable_monitor(interface) != -1:
+                addToolInfo(info_area, "Monitor mode disabled for " + str(interface) + "\n\n")
+            else:
+                stop_and_warn(None, 99)
+            break
+
+    return 0
 
 
 # def execute_search(interface, info_area):
@@ -143,23 +157,17 @@ def execute_search(interface, info_area):
 #     return 0
 
 
-def execute_scan(interface, info_area):
+def execute_scan(interface, info_area, tree):
     addToolInfo(info_area, "Executing scan, please wait...\n\n")
-    new_name = enable_monitor(interface)
+    interface_monitor = enable_monitor(interface)
 
-    if new_name == -1: # should not be the case but to be safe...
+    if interface_monitor == -1: # should not be the case but to be safe...
         stop_and_warn(None, 99)
     else:
-        addToolInfo(info_area, str(interface) + " is now in monitor mode, at " + new_name + "\n\n")
+        addToolInfo(info_area, str(interface) + " is now in monitor mode, at " + interface_monitor + "\n\n")
 
     # perform scan
     addToolInfo(info_area, "Searching for wireless networks...\n\n")
-    networks = execute_search(interface, info_area)
-    addToolInfo(info_area, "Search done.\n\n")
+    execute_search(interface_monitor, info_area, tree)
 
-    if disable_monitor(new_name) != -1:
-        addToolInfo(info_area, "Monitor mode disabled for " + str(interface) + "\n\n")
-    else:
-        stop_and_warn(None, 99)
-
-    return networks
+    return 0

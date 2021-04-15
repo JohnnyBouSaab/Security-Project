@@ -5,6 +5,7 @@ from tkinter import *
 from tools import *
 from constants import *
 import pyfiglet
+import globs
 
 active_interface = ""
 
@@ -16,16 +17,23 @@ def addInfo(msg):
         T.see(END)
         T.update()
 
+
+def stop_scan():
+    globs.stop_scanning = True
+    scan_btn['state'] = NORMAL
+    stop_btn['state'] = DISABLED
+
+
 def scan():
     if len(active_interface) == 0: # no active interface:
         addInfo("Please choose an interface above before scanning\n\n")
     else:
-        result = execute_scan(active_interface, T)
-
+        scan_btn['state'] = DISABLED
+        stop_btn['state'] = NORMAL
+        execute_scan(active_interface, T, tree)
         # updating the treeview table:
 
         # a- clear the tree's old info
-        tree.delete(*tree.get_children())
 
         # b- add the new info
 
@@ -38,10 +46,6 @@ def scan():
         #         'wps': "-", # parts[],
         #         'channel': "6",
         # })
-
-        for network in result:
-            tree.insert('', 'end', values = (network["name"], network["encryption"], network["power"], \
-                                            network["mac_address"], network["wps"], network["channel"]) )
 
 
 
@@ -70,6 +74,11 @@ bottom.pack(fill=BOTH, expand=True)
 # Scan button
 scan_btn = Button(top, text='Scan', bg='white', font=('arial', 11, 'normal'), command=scan, highlightthickness=0)
 scan_btn.pack(side=LEFT, padx=15, pady=15)
+
+# Stop Scan Button
+stop_btn = Button(top, text="Stop", bg='white', font=('arial', 11, 'normal'), command = stop_scan, highlightthickness=0)
+stop_btn.pack(side=LEFT, padx=15, pady=15)
+stop_btn['state'] = DISABLED
 
 # Interface option
 variable = StringVar(root)
@@ -171,4 +180,5 @@ T.config(state=DISABLED)
 T.see(END)
 
 # run
+globs.init()
 root.mainloop()

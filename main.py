@@ -22,6 +22,28 @@ def scan():
     else:
         result = execute_scan(active_interface, T)
 
+        # updating the treeview table:
+
+        # a- clear the tree's old info
+        tree.delete(*tree.get_children())
+
+        # b- add the new info
+
+        # dummy test data
+        # result.append({
+        #         'name': 'Test Name',
+        #         'encryption': 'WPA2',
+        #         'power': '-75',
+        #         'mac_address': '11:11:11:11:11:11',
+        #         'wps': "-", # parts[],
+        #         'channel': "6",
+        # })
+
+        for network in result:
+            tree.insert('', 'end', values = (network["name"], network["encryption"], network["power"], \
+                                            network["mac_address"], network["wps"], network["channel"]) )
+
+
 
 def interface(new_interface):
     global active_interface
@@ -93,6 +115,45 @@ scroll = ttk.Scrollbar(mid, orient="vertical", command=tree.yview)
 scroll.pack(side = 'right', fill = 'y')
 
 tree.configure(yscrollcommand=scroll.set)
+
+# BEGIN right click menu stuff
+
+#the right-click event
+def tree_on_right_click(event):
+    iid = tree.identify_row(event.y)
+    if iid:
+        # mouse pointer over item
+        # highlight the row (like for left-click)
+        tree.selection_set(iid)
+        # contextMenu.post(event.x_root, event.y_root)
+
+        # do something with the row item
+        # iid is the id of the item
+        # show the right-click pop-up
+        try:
+            popup.tk_popup(event.x_root, event.y_root, 0)
+        finally:
+            popup.grab_release()
+
+
+    else:
+        # mouse pointer not over item
+        # occurs when items do not fill frame
+        # no action required
+        pass
+
+# attach event for when right-clicking a treeview element
+tree.bind("<Button-3>", tree_on_right_click)
+
+# pop-up menu on right click
+popup = Menu(root, tearoff=0)
+popup.add_command(label="Crack Password") # , command=next) etc...
+popup.add_command(label="Other Attack 1")
+popup.add_command(label="Other Attack 2")
+popup.add_separator()
+
+# END right click menu stuff
+
 
 # for val in data:
 #     tree.insert('', 'end', values = (val[0], val[1], val[2]) )

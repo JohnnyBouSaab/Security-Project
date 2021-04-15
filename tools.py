@@ -5,6 +5,7 @@ from tkinter.ttk import *
 from tkinter import * 
 import time
 import sys
+import os
 
 # shows info at text area in main app
 def addToolInfo(T, msg):
@@ -76,7 +77,7 @@ def enable_monitor(interface):
     return new_name 
 
     
-def disbale_monitor(interface):
+def disable_monitor(interface):
     try:
         subprocess.run(['airmon-ng', 'stop', interface], capture_output=True)
     except:
@@ -85,8 +86,61 @@ def disbale_monitor(interface):
 
 
 def execute_search(interface, info_area):
+    # the number of seconds to wait for airodump output before killing the process, in seconds
+    timeout = 6
 
-    return 0
+    # current dir
+    cwd = os.path.dirname(os.path.realpath(__file__)) 
+
+    # path of output csv file
+    out_path = os.path.join(cwd, "out-01.csv")
+    if os.path.exists(out_path):
+        os.remove(out_path)
+
+    airodump = subprocess.Popen(('airodump-ng --wps --output-format csv -w out -f 400 ' + interface + "mon").split(" "), \
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, cwd=cwd)
+    
+    time.sleep(timeout)
+    airodump.terminate()
+
+    table = ''
+    # TODO read the output file, "out-01.csv"
+    with open("out-01.csv", "r") as f:
+        networks = []
+        for line in f.readlines()[2:]:
+            parts = line.split(", ")
+            if len(parts) < 14:
+                continue
+            
+            networks.append({
+                'name': parts[13],
+                'encryption': parts[5],
+                'power': parts[8],
+                'mac_address': parts[0],
+                'wps': "-", # parts[],
+                'channel': parts[3],
+            })
+
+    return networks
+
+
+# def execute_search(interface, info_area):
+#     # command: nmcli dev wifi
+
+#     x = disable_monitor(interface + "mon")
+
+#     process = subprocess.Popen('nmcli -t dev wifi'.split(" "), shell=True, stdout=subprocess.PIPE)
+#     process.wait()
+
+#     res= ""
+#     for line in process.stdout:
+#         res += line.decode()
+
+#     addToolInfo(info_area, res)
+
+#     x = enable_monitor(interface)
+
+#     return 0
 
 
 def execute_scan(interface, info_area):
@@ -100,12 +154,12 @@ def execute_scan(interface, info_area):
 
     # perform scan
     addToolInfo(info_area, "Searching for wireless networks...\n\n")
-    execute_search(interface, info_area)
+    networks = execute_search(interface, info_area)
     addToolInfo(info_area, "Search done.\n\n")
 
-    if disbale_monitor(new_name) != -1:
+    if disable_monitor(new_name) != -1:
         addToolInfo(info_area, "Monitor mode disabled for " + str(interface) + "\n\n")
     else:
         stop_and_warn(None, 99)
 
-    return 0
+    return networks

@@ -3,13 +3,17 @@ import subprocess
 import os 
 
 # Handshake
-def try_handshake(T, tree, interface):
+def try_handshake(T, tree, interface, passive=True):
 
-    tools.addToolInfo(T, "Executing handshake operation...")
+    tools.addToolInfo(T, "Executing handshake operation...\n\n")
     monitor_interface = tools.enable_monitor(interface)
     tools.addToolInfo(T, str(interface) + " is now in monitor mode, at " + monitor_interface + "\n\n")
 
     current_item = tree.item(tree.focus())
+    # some bug, will fix later
+    if len(current_item['values']) == 0:
+        tools.addToolInfo(T, "Please try the attack again, something went wrong\n\n")
+        return 0
     mac, wifi_name, enc, channel = current_item['values'][3], current_item['values'][0], \
                 current_item['values'][1], current_item['values'][5] 
     tools.addToolInfo(T, "Trying to capture handshake for " + str(wifi_name) + "...\n")
@@ -39,6 +43,10 @@ def try_handshake(T, tree, interface):
                                 " !!!.\nCaptured file available at captured_" + str(wifi_name)+'.cap\n\n') 
                             captured = True
                             break
+        # If not passive (active), try to de-auth and capture 
+        if not passive:
+            #TODO implement de-auth using aireplay
+            print("LATER")
 
     tools.disable_monitor(monitor_interface)
     tools.addToolInfo(T, "Monitor mode disabled for " + str(interface) + "\n\n")

@@ -135,7 +135,8 @@ tree.bind("<Button-3>", tree_on_right_click)
 
 # pop-up menu on right click
 popup = Menu(root, tearoff=0)
-popup.add_command(label="Handshake", command = lambda: attacks.try_handshake(T, tree, active_interface))
+popup.add_command(label="Handshake (passive/listen)", command = lambda: attacks.try_handshake(T, tree, active_interface))
+popup.add_command(label="Handshake (active/attack)", command = lambda: attacks.try_handshake(T, tree, active_interface, passive=False))
 popup.add_command(label="WPS Bruteforce")
 popup.add_command(label="WPS Pixie Dust")
 popup.add_separator()

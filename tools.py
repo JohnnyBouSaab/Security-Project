@@ -99,7 +99,11 @@ def execute_search(interface, info_area, tree):
     airodump = subprocess.Popen(('airodump-ng --output-format csv -w out -f 400 --write-interval 1 ' + interface).split(" "), \
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, cwd=cwd)
     
-    # print("HERE")
+    # wash for wps data
+    with open('wps', "w") as wps_file:
+        wash = subprocess.Popen(('wash -i ' + interface).split(" "), \
+                                    stdout=wps_file, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, cwd=cwd)
+                                    
     while True:
         if os.path.exists(cwd+"/out-01.csv"):
             with open("out-01.csv", "r") as f: 
@@ -116,6 +120,18 @@ def execute_search(interface, info_area, tree):
                         'wps': "-", # parts[],
                         'channel': parts[3],
                     })
+                    mac = parts[0]
+                    # Try to find wps data for this mac address
+                    if os.path.exists(cwd+"/wps"):
+                        with open("wps", 'r') as wps_file:
+                            for wps_line in wps_file.readlines()[2:]:
+                                wps_parts = clean(wps_line.split(" "))
+                                # found mac ?
+                                if wps_parts[0] == mac:
+                                    lck = 'nl'
+                                    if wps_parts[4] != 'No':
+                                        lck = 'l'
+                                    networks[-1]['wps'] = wps_parts[3] + '('+lck+')'
 
             # update tree
             tree.delete(*tree.get_children())
@@ -127,6 +143,7 @@ def execute_search(interface, info_area, tree):
         # Check for stop scan flag
         if globs.stop_scanning:
             airodump.terminate()
+            wash.terminate()
             globs.stop_scanning = False
             addToolInfo(info_area, "Search done.\n\n")
             if disable_monitor(interface) != -1:
@@ -136,25 +153,6 @@ def execute_search(interface, info_area, tree):
             break
 
     return 0
-
-
-# def execute_search(interface, info_area):
-#     # command: nmcli dev wifi
-
-#     x = disable_monitor(interface + "mon")
-
-#     process = subprocess.Popen('nmcli -t dev wifi'.split(" "), shell=True, stdout=subprocess.PIPE)
-#     process.wait()
-
-#     res= ""
-#     for line in process.stdout:
-#         res += line.decode()
-
-#     addToolInfo(info_area, res)
-
-#     x = enable_monitor(interface)
-
-#     return 0
 
 
 def execute_scan(interface, info_area, tree):

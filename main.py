@@ -31,21 +31,6 @@ def scan():
         scan_btn['state'] = DISABLED
         stop_btn['state'] = NORMAL
         execute_scan(active_interface, T, tree)
-        # updating the treeview table:
-
-        # a- clear the tree's old info
-
-        # b- add the new info
-
-        # dummy test data
-        # result.append({
-        #         'name': 'Test Name',
-        #         'encryption': 'WPA2',
-        #         'power': '-75',
-        #         'mac_address': '11:11:11:11:11:11',
-        #         'wps': "-", # parts[],
-        #         'channel': "6",
-        # })
 
 
 
@@ -93,14 +78,7 @@ elif len(interfaces) > 0: # user has no wifi interfaces
     interface_list.pack(side=LEFT)
 else:
     stop_and_warn(root, 1)
-
-# Scanned Networks - mid
-# data = [ ["val1", "val2", "val3"],
-#          ["asd1", "asd2", "asd3"],
-#          ["bbb1", "bbb3", "bbb4"],
-#          ["ccc1", "ccc3", "ccc4"],
-#          ["ddd1", "ddd3", "ddd4"],
-#          ["eee1", "eee3", "eee4"] ]
+    
 
 tree = ttk.Treeview(mid, columns = (1,2,3,4,5,6), show = "headings")
 tree.pack(side = 'left')

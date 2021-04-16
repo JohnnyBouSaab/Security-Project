@@ -134,9 +134,9 @@ tree.bind("<Button-3>", tree_on_right_click)
 
 # pop-up menu on right click
 popup = Menu(root, tearoff=0)
-popup.add_command(label="Crack Password") # , command=next) etc...
-popup.add_command(label="Other Attack 1")
-popup.add_command(label="Other Attack 2")
+popup.add_command(label="Handshake") # , command=next) etc...
+popup.add_command(label="WPS Bruteforce")
+popup.add_command(label="WPS Pixie Dust")
 popup.add_separator()
 
 # END right click menu stuff
@@ -157,6 +157,13 @@ T.insert(END, info_text)
 T.config(state=DISABLED)
 T.see(END)
 
+
+def dis_exit():
+    disable_monitor(active_interface+"mon")
+    root.destroy() 
+
 # run
 globs.init()
+# disable monitor mode on sudden exit
+root.protocol("WM_DELETE_WINDOW", dis_exit)
 root.mainloop()

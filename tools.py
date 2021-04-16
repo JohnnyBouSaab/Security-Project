@@ -40,10 +40,14 @@ def get_interfaces():
 
     return interfaces
 
+def quit_app(root):
+    root.destroy()
+
 # stops the program and warns user about missing libraries/tools/requirements
 def stop_and_warn(root, flag):
     if root:
         root.withdraw()
+        root.update()
     exitsure = tk.Toplevel()
     msg = ""
     if flag == 0:
@@ -54,7 +58,7 @@ def stop_and_warn(root, flag):
         msg = "Something went wrong :(("
     message = tk.Label(exitsure, text=msg)
     message.grid(column=0, row=0)
-    Exit = tk.Button(exitsure, text="Okay :(", command=quit)
+    Exit = tk.Button(exitsure, text="Okay :(", command = lambda: quit_app(root))
     Exit.grid(column=0, row=2)
 
 
@@ -62,6 +66,8 @@ def enable_monitor(interface):
     interface_monitor = ''
     try:
         res = ""
+        p = subprocess.Popen(["airmon-ng check kill"], shell=True, stdout=subprocess.PIPE)
+        p.wait()
         process = subprocess.Popen(["airmon-ng start " + str(interface)], shell=True, stdout=subprocess.PIPE)
         process.wait()
 
@@ -81,6 +87,7 @@ def enable_monitor(interface):
 def disable_monitor(interface):
     try:
         subprocess.run(['airmon-ng', 'stop', interface], capture_output=True)
+        subprocess.run(['service', 'NetworkManager', 'restart'], capture_output=True)
     except:
         return -1 
     return 0

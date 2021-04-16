@@ -6,6 +6,7 @@ from tools import *
 from constants import *
 import pyfiglet
 import globs
+import attacks
 
 active_interface = ""
 
@@ -134,7 +135,7 @@ tree.bind("<Button-3>", tree_on_right_click)
 
 # pop-up menu on right click
 popup = Menu(root, tearoff=0)
-popup.add_command(label="Handshake") # , command=next) etc...
+popup.add_command(label="Handshake", command = lambda: attacks.try_handshake(T, tree, active_interface))
 popup.add_command(label="WPS Bruteforce")
 popup.add_command(label="WPS Pixie Dust")
 popup.add_separator()

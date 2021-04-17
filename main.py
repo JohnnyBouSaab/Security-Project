@@ -25,13 +25,23 @@ def stop_scan():
     stop_btn['state'] = DISABLED
 
 
+def stop_attack():
+    globs.stop_attack = True
+    stop_btn['state'] = DISABLED
+    scan_btn['state'] = NORMAL
+
+
 def scan():
     if len(active_interface) == 0: # no active interface:
         addInfo("Please choose an interface above before scanning\n\n")
     else:
         scan_btn['state'] = DISABLED
         stop_btn['state'] = NORMAL
+        tree.state(("disabled",))
+        tree.unbind("<Button-3>",)
         execute_scan(active_interface, T, tree)
+        tree.state(("!disabled",))
+        tree.bind("<Button-3>", tree_on_right_click)
 
 
 
@@ -65,6 +75,12 @@ scan_btn.pack(side=LEFT, padx=15, pady=15)
 stop_btn = Button(top, text="Stop", bg='white', font=('arial', 11, 'normal'), command = stop_scan, highlightthickness=0)
 stop_btn.pack(side=LEFT, padx=15, pady=15)
 stop_btn['state'] = DISABLED
+
+# Stop Attack Button
+stop_attack_btn = Button(top, text="Stop Attack", bg='white', font=('arial', 11, 'normal'), \
+                                command = stop_attack, highlightthickness=0)
+stop_attack_btn.pack(side=RIGHT, padx=15, pady=15)
+stop_attack_btn['state'] = DISABLED
 
 # Interface option
 variable = StringVar(root)
@@ -135,8 +151,12 @@ tree.bind("<Button-3>", tree_on_right_click)
 
 # pop-up menu on right click
 popup = Menu(root, tearoff=0)
-popup.add_command(label="Handshake (passive/listen)", command = lambda: attacks.try_handshake(T, tree, active_interface))
-popup.add_command(label="Handshake (active/attack)", command = lambda: attacks.try_handshake(T, tree, active_interface, passive=False))
+popup.add_command(label="Handshake (passive/listen)", \
+    command = lambda: attacks.try_handshake(root, scan_btn, stop_attack_btn, \
+        T, tree, active_interface, tree_on_right_click,))
+popup.add_command(label="Handshake (active/attack)", \
+    command = lambda: attacks.try_handshake(root, scan_btn, stop_attack_btn, \
+        T, tree, active_interface, tree_on_right_click, passive=False))
 popup.add_command(label="WPS Bruteforce")
 popup.add_command(label="WPS Pixie Dust")
 popup.add_separator()

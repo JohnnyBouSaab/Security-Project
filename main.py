@@ -7,6 +7,7 @@ from tools import *
 from constants import *
 import pyfiglet
 import globs
+import attacks
 
 from attacks import crack_password
 from functools import partial
@@ -35,21 +36,6 @@ def scan():
         scan_btn['state'] = DISABLED
         stop_btn['state'] = NORMAL
         execute_scan(active_interface, T, tree)
-        # updating the treeview table:
-
-        # a- clear the tree's old info
-
-        # b- add the new info
-
-        # dummy test data
-        # result.append({
-        #         'name': 'Test Name',
-        #         'encryption': 'WPA2',
-        #         'power': '-75',
-        #         'mac_address': '11:11:11:11:11:11',
-        #         'wps': "-", # parts[],
-        #         'channel': "6",
-        # })
 
 
 
@@ -61,8 +47,8 @@ def interface(new_interface):
 
 # USER INTERFACE SECTION
 
-# root = Tk()
-root = ThemedTk(theme="arc")
+root = Tk()
+# root = ThemedTk(theme="arc")
 
 # styles
 style = ttk.Style()
@@ -103,14 +89,7 @@ elif len(interfaces) > 0: # user has no wifi interfaces
     interface_list.pack(side=LEFT)
 else:
     stop_and_warn(root, 1)
-
-# Scanned Networks - mid
-# data = [ ["val1", "val2", "val3"],
-#          ["asd1", "asd2", "asd3"],
-#          ["bbb1", "bbb3", "bbb4"],
-#          ["ccc1", "ccc3", "ccc4"],
-#          ["ddd1", "ddd3", "ddd4"],
-#          ["eee1", "eee3", "eee4"] ]
+    
 
 tree = ttk.Treeview(mid, columns = (1,2,3,4,5,6), show = "headings")
 tree.pack(side = 'left')
@@ -157,9 +136,11 @@ def tree_on_right_click(event):
 
             # pop-up menu on right click
             popup = tk.Menu(root, tearoff=0)
-            popup.add_command(label="Crack Password", command= partial(crack_password, mac_address, name, channel, active_interface, T))
-            popup.add_command(label="Other Attack 1")
-            popup.add_command(label="Other Attack 2")
+            popup.add_command(label="Handshake (passive/listen)", command = lambda: attacks.try_handshake(T, tree, active_interface, tree_iid=selected_iid))
+            popup.add_command(label="Handshake (active/attack)", command = lambda: attacks.try_handshake(T, tree, active_interface, passive=False, tree_iid=selected_iid))
+            popup.add_command(label="WPS Bruteforce")
+            popup.add_command(label="WPS Pixie Dust")
+            popup.add_separator()
 
             popup.tk_popup(event.x_root, event.y_root, 0)
         finally:
@@ -175,7 +156,7 @@ tree.bind("<Button-3>", tree_on_right_click)
 #     tree.insert('', 'end', values = (val[0], val[1], val[2]) )
 
 # Debug / Info section, bottom
-S = tk.Scrollbar(bottom)
+S = ttk.Scrollbar(bottom)
 T = tk.Text(bottom, height=17, bg="black", fg='white')
 S.pack(side=RIGHT, fill=Y)
 T.pack(side=LEFT, fill=BOTH, expand=True)
@@ -186,6 +167,13 @@ T.insert(END, info_text)
 T.config(state=DISABLED)
 T.see(END)
 
+
+def dis_exit():
+    disable_monitor(active_interface+"mon")
+    root.destroy() 
+
 # run
 globs.init()
+# disable monitor mode on sudden exit
+root.protocol("WM_DELETE_WINDOW", dis_exit)
 root.mainloop()

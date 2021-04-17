@@ -1,5 +1,9 @@
 __pycache__/
 .vscode/launch.json
 out-01.csv
-playground.py
+playground*.py
 password_list_generator.py
+packets_*
+captured_*
+*_output
+wps

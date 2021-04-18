@@ -157,8 +157,10 @@ popup.add_command(label="Handshake (passive/listen)", \
 popup.add_command(label="Handshake (active/attack)", \
     command = lambda: attacks.try_handshake(root, scan_btn, stop_attack_btn, \
         T, tree, active_interface, tree_on_right_click, passive=False))
-popup.add_command(label="WPS Bruteforce")
-popup.add_command(label="WPS Pixie Dust")
+popup.add_command(label="WPS Bruteforce", \
+    command = lambda: attacks.wps_attack(root, scan_btn, stop_attack_btn, T, tree, active_interface, tree_on_right_click))
+popup.add_command(label="WPS Pixie Dust", \
+    command = lambda: attacks.wps_attack(root, scan_btn, stop_attack_btn, T, tree, active_interface, tree_on_right_click, pixie = True))
 popup.add_separator()
 
 # END right click menu stuff

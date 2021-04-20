@@ -56,23 +56,32 @@ def interface(new_interface):
 
 # USER INTERFACE SECTION
 
-root = Tk()
-# root = ThemedTk(theme="arc")
+# root = Tk()
 
-# styles
+# using ThemedTk to slightly improve the GUI's looks
+# to install: 
+# python3 -m pip install git+https://github.com/RedFantom/ttkthemes
+root = ThemedTk(theme="arc")
+
+# styles: buttons, frames, treeview (when disabled)
 style = ttk.Style()
-style.configure("TButton", background="white", padding=0, font=('arial', 11, 'normal'), highlightthickness=0, borderwidth=0)
+style.configure("TButton", background="white", padding=(0, 3), font=('arial', 11, 'normal'), highlightthickness=0, borderwidth=0)
+style.configure("top.TFrame", background='black', height=100)
+style.configure("mid.TFrame", background='#939194', height=200)
+style.configure("bottom.TFrame", background='grey', height=400)
+style.map('Treeview', foreground=[('disabled', '#a9acb2'), ('selected', '#fff')], background=[('disabled', '#fbfcfc'), ('selected', '#e95420')])
+style.configure('TEntry', selectbackground='#e95420', selectforeground="white")
 
 root.geometry('800x600')
 root.configure(background='#000000')
 root.title('WiHack :D')
 
 # Frames & Layout
-top = Frame(root, height=100, bg='black')
+top = ttk.Frame(root, style="top.TFrame")
 top.pack(fill=X)
-mid = Frame(root, height=200, bg='#939194')
+mid = ttk.Frame(root, style="mid.TFrame")
 mid.pack(fill=BOTH)
-bottom = Frame(root, height=400, bg='grey')
+bottom = ttk.Frame(root, style="bottom.TFrame")
 bottom.pack(fill=BOTH, expand=True)
 
 # Scan button
@@ -85,8 +94,7 @@ stop_btn.pack(side=LEFT, padx=15, pady=15)
 stop_btn['state'] = DISABLED
 
 # Stop Attack Button
-stop_attack_btn = Button(top, text="Stop Attack", bg='white', font=('arial', 11, 'normal'), \
-                                command = stop_attack, highlightthickness=0)
+stop_attack_btn = ttk.Button(top, text="Stop Attack", style="TButton", command = stop_attack)
 stop_attack_btn.pack(side=RIGHT, padx=15, pady=15)
 stop_attack_btn['state'] = DISABLED
 

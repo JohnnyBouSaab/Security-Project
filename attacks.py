@@ -281,7 +281,7 @@ def crack_wpa(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right
         time.sleep(0.5)
 
     # delete the log file, no more needed
-    # os.remove(output_filename)
+    os.remove(output_filename)
     stopped_attack(tree, scan_btn, stop_attack_btn, tree_on_right_click)
     globs.stop_attack = False
 

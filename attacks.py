@@ -226,10 +226,14 @@ def crack_wpa(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right
 
     # get path of dictionary file
     dict_filename = askopenfilename(title="Select a dictionary file for this attack", initialfile="passwords.lst", \
-                                    initialdir=cwd, filetypes=[("Dictionary files", "*.lst"), ("Text files", "*.txt")])
+                                    initialdir=cwd, filetypes=[("Dictionary files", "*.lst"), ("Text files", "*.txt")], \
+                                    parent=root)
 
-    if dict_filename is None:
-        dict_filename = "passwords.lst"
+    # if user pressed "cancel" or "X"
+    if not dict_filename:
+        # dict_filename = "passwords.lst"
+        tools.addToolInfo(T, "Operation canceled.\n\n")
+        return 0
 
     # now go
     attack_launched(tree, scan_btn, stop_attack_btn)

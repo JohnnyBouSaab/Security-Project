@@ -9,10 +9,10 @@ import os
 import globs
 
 # shows info at text area in main app
-def addToolInfo(T, msg):
+def addToolInfo(T, msg, tag=""):
     if(T):
         T.config(state=NORMAL)
-        T.insert(END, msg)
+        T.insert(END, msg, tag)
         T.config(state=DISABLED)
         T.see(END)
         T.update()

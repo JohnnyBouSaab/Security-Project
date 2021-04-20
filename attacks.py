@@ -246,33 +246,55 @@ def crack_wpa(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right
 
     output_filename = f"crack_wpa_{wifi_name}.txt"
 
-    with open(output_filename, "w+") as f:
-        aircrack = subprocess.Popen([f"aircrack-ng -w {dict_filename} -b {mac} captured_{wifi_name}.cap"], shell=True, stdout=f, stderr=f)
-        aircrack.wait()
+    with open(output_filename, "w+") as f_temp:
+        aircrack = subprocess.Popen([f"aircrack-ng -w {dict_filename} -b {mac} captured_{wifi_name}.cap"], shell=True, stdout=f_temp, stderr=f_temp)
+        # aircrack.wait()
 
-        # pwd_found = False
-        # while not pwd_found:
-    with open(output_filename, "r+") as f:
-        contents = f.readlines()
-        
-        for line in contents:
-            if "KEY FOUND" in line:
-                idx_left = line.index("!") + 3
-                idx_right = line.index("]")
-                tools.addToolInfo(T, "Password found: " + line[idx_left:idx_right] + "\n\n")
-                aircrack.terminate()
-                # pwd_found = True
+    pwd_found = False
+    write_progress(T, 0)
+    while not pwd_found:
+        with open(output_filename, "r+") as f:
+            contents = f.readlines()
 
-                # break from the inner loop, so that we stop reading the file
-                break
-        else:
-            tools.addToolInfo(T, "Password not found :(\n\nTry again with another dictionary.\n\n")
+            for line in contents:
+                if "KEY FOUND" in line:
+                    idx_left = line.index("!") + 3
+                    idx_right = line.index("]")
+                    update_progress(T, 100.0)
+                    tools.addToolInfo(T, "\nPassword found: " + line[idx_left:idx_right] + "\n\n")
+                    aircrack.terminate()
+                    pwd_found = True
 
-            # time.sleep(0.5)
+                    # break from the inner loop, so that we stop reading the file
+                    break
+
+                # TODO another if to report the progress
+                # maybe make a fancy progress bar
+                if "%" in line:
+                    # that's the progress percentage
+                    percentages = re.findall("\d+\.\d+%", line)
+                    if len(percentages) > 0:
+                        progress = float(percentages[0][:-1])
+                        # show percentage in some way
+                        update_progress(T, progress)
+
+        time.sleep(0.5)
 
     # delete the log file, no more needed
-    os.remove(output_filename)
+    # os.remove(output_filename)
     stopped_attack(tree, scan_btn, stop_attack_btn, tree_on_right_click)
     globs.stop_attack = False
 
     return 0
+
+def write_progress(T, value):
+    progress_str = "#" * int(value / 100.0 * 20.0)
+    tools.addToolInfo(T, ("[%-20s]" % progress_str) + f"\t{value}%", "progress")
+
+def update_progress(T, value):
+    T.configure(state="normal")
+    last_insert = T.tag_ranges("progress")
+    T.delete(last_insert[0], last_insert[1])
+    # T.delete("end-1c linestart", "end")
+    write_progress(T, value)
+    T.configure(state="disabled")

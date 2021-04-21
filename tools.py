@@ -72,12 +72,10 @@ def enable_monitor(interface):
         process.wait()
 
         for line in process.stdout:
-            res += line.decode()
-        res = clean(res.split("\n"))
-        
-        if "monitor mode vif enabled for" in res[-2]:
-            line = re.sub('\s+',' ',res[-2])
-            interface_monitor = line[0:-1].split(' ')[-1].split(']')[1]
+            res = line.decode().strip()
+            if "monitor mode vif enabled for" in res:
+                interface_monitor = res.split(']')[2][0:-1]
+                
     except:
         return -1
 

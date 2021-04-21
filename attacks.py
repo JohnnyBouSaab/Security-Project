@@ -102,7 +102,7 @@ def try_handshake(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_r
                 break
 
             aireplay.wait()
-            tools.addToolInfo(T, "Sent " + str(times) + " de-atuh packets. Listening, please wait...\n")
+            tools.addToolInfo(T, "Sent " + str(times) + " de-auth packets. Listening, please wait...\n")
             t = rd.randint(2, 6) # sleep some random seconds
             time.sleep(t)
 
@@ -202,15 +202,10 @@ def wps_attack(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_righ
 
                     # Pixie attack case
                     else:
-                        # print(line)
-                        # if "WPS pin not found" or "Pixiewps fail" in line:
-                        #     tools.addToolInfo(T, "Pixie dust attack failed, nothing cracked.\n")
-                        #     globs.stop_attack = False
-                        #     done = True 
-                        #     break
+
                         if ("Receive timeout occurred" in line or "WPS transaction failed" in line) and not pixie_warn:
                             pixie_warn = True
-                            tools.addToolInfo(T, "Timeout when connecting to router.\nStop attack (or try re-launching attack) if you keep seeing this for more than 10 mins...")
+                            tools.addToolInfo(T, "Timeout when connecting to router.\nStop attack (or try re-launching attack) if you keep seeing this for more than 10 mins...\n")
                         elif "Pixiewps fail" in line:
                             tools.addToolInfo(T, "Pixie dust attack failed, nothing cracked.\n")
                             globs.stop_attack = False

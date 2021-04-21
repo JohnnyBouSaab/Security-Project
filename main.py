@@ -72,7 +72,7 @@ style.configure("bottom.TFrame", background='grey', height=400)
 style.map('Treeview', foreground=[('disabled', '#a9acb2'), ('selected', '#fff')], background=[('disabled', '#fbfcfc'), ('selected', '#e95420')])
 style.configure('TEntry', selectbackground='#e95420', selectforeground="white")
 
-root.geometry('800x600')
+root.geometry('1100x600')
 root.configure(background='#000000')
 root.title('WiHack :D')
 
@@ -114,7 +114,7 @@ else:
     stop_and_warn(root, 1)
     
 
-tree = ttk.Treeview(mid, columns = (1,2,3,4,5,6), show = "headings")
+tree = ttk.Treeview(mid, columns = (1,2,3,4,5,6,7,8), show = "headings")
 tree.pack(side = 'left')
 
 tree.heading(1, text="Name")
@@ -123,6 +123,8 @@ tree.heading(3, text="Power")
 tree.heading(4, text="Mac Address")
 tree.heading(5, text="WPS?")
 tree.heading(6, text="Channel")
+tree.heading(7, text="Vendor")
+tree.heading(8, text="Recommended Attacks")
 
 # width = tree.winfo_width() 
 tree.column(1, width = 160)
@@ -131,6 +133,8 @@ tree.column(3, width = 80)
 tree.column(4, width = 300)
 tree.column(5, width = 80)
 tree.column(6, width = 80)
+tree.column(7, width = 100)
+tree.column(8, width = 160)
 
 scroll = ttk.Scrollbar(mid, orient="vertical", command=tree.yview)
 scroll.pack(side = 'right', fill = 'y')
@@ -188,10 +192,6 @@ def tree_on_right_click(event):
 tree.bind("<Button-3>", tree_on_right_click)
 
 # END right click menu stuff
-
-
-# for val in data:
-#     tree.insert('', 'end', values = (val[0], val[1], val[2]) )
 
 # Debug / Info section, bottom
 S = ttk.Scrollbar(bottom)

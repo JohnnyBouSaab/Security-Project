@@ -75,7 +75,7 @@ def enable_monitor(interface):
             res = line.decode().strip()
             if "monitor mode vif enabled for" in res:
                 interface_monitor = res.split(']')[2][0:-1]
-                
+
     except:
         return -1
 
@@ -124,8 +124,10 @@ def execute_search(interface, info_area, tree):
                         'mac_address': parts[0],
                         'wps': "-", # parts[],
                         'channel': parts[3],
+                        'vendor': "-",
+                        'recommended': "-"
                     })
-                    mac = parts[0]
+                    mac = parts[0]; name = parts[13]
                     # Try to find wps data for this mac address
                     if os.path.exists(cwd+"/wps"):
                         with open("wps", 'r') as wps_file:
@@ -137,12 +139,22 @@ def execute_search(interface, info_area, tree):
                                     if wps_parts[4] != 'No':
                                         lck = 'l'
                                     networks[-1]['wps'] = wps_parts[3] + '('+lck+')'
+                                    networks[-1]['vendor'] = wps_parts[5]
+
+                    # Recommend any attacks?
+                    # TP-link default pass attacks - router may have default 8-digit password
+                    if "tp-link" in str(name).lower() or "tp_link" in str(name).lower():
+                        networks[-1]['recommended'] = "8-digit Dictionary"
+                    # After some experience with these routers (vendor RalinkTe), many of them are vulnerable to pixie dust
+                    elif "RalinkTe" in networks[-1]['vendor']:  
+                        networks[-1]['recommended'] = "Pixie Dust"
 
             # update tree
             tree.delete(*tree.get_children())
             for network in networks:
                 tree.insert('', 'end', values = (network["name"], network["encryption"], network["power"], \
-                                            network["mac_address"], network["wps"], network["channel"]) )
+                                            network["mac_address"], network["wps"], network["channel"], \
+                                                network['vendor'], network['recommended']) )
             tree.update()
 
         # Check for stop scan flag

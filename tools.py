@@ -145,8 +145,8 @@ def execute_search(interface, info_area, tree):
                     # TP-link default pass attacks - router may have default 8-digit password
                     if "tp-link" in str(name).lower() or "tp_link" in str(name).lower():
                         networks[-1]['recommended'] = "8-digit Dictionary"
-                    # After some experience with these routers (vendor RalinkTe), many of them are vulnerable to pixie dust
-                    elif "RalinkTe" in networks[-1]['vendor']:  
+                    # After some experience with these routers (vendors), many of them are vulnerable to pixie dust
+                    elif "RalinkTe" in networks[-1]['vendor'] or 'RealtekS' in networks[-1]['vendor']:  
                         networks[-1]['recommended'] = "Pixie Dust"
 
             # update tree

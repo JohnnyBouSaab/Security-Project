@@ -42,7 +42,9 @@ def scan():
         stop_btn['state'] = NORMAL
         tree.state(("disabled",))
         tree.unbind("<Button-3>",)
+        globs.interface_list['state'] = DISABLED
         execute_scan(active_interface, T, tree)
+        globs.interface_list['state'] = NORMAL
         tree.state(("!disabled",))
         tree.bind("<Button-3>", tree_on_right_click)
 
@@ -53,7 +55,6 @@ def interface(new_interface):
     active_interface = new_interface
 
 
-
 # USER INTERFACE SECTION
 
 # root = Tk()
@@ -62,6 +63,9 @@ def interface(new_interface):
 # to install: 
 # python3 -m pip install git+https://github.com/RedFantom/ttkthemes
 root = ThemedTk(theme="arc")
+
+# globs 
+globs.init()
 
 # styles: buttons, frames, treeview (when disabled)
 style = ttk.Style()
@@ -108,8 +112,8 @@ if interfaces == -1: # user does not have requirements (in this case probably ai
 elif len(interfaces) > 0: # user has no wifi interfaces 
     variable.set("Interface") 
     # interface_list = OptionMenu(top, variable, interfaces, command=interface)
-    interface_list = ttk.OptionMenu(top, variable, *(["Interface"] + interfaces), command=interface)
-    interface_list.pack(side=LEFT)
+    globs.interface_list = ttk.OptionMenu(top, variable, *(["Interface"] + interfaces), command=interface)
+    globs.interface_list.pack(side=LEFT)
 else:
     stop_and_warn(root, 1)
     
@@ -210,8 +214,13 @@ def dis_exit():
     disable_monitor(active_interface+"mon")
     root.destroy() 
 
-# run
-globs.init()
+
+# Spoof option
+globs.spoof_option = ttk.Checkbutton(top, text='Spoof MAC', variable=globs.spoof_mac)
+globs.spoof_option.pack(side=LEFT, padx=15, pady=15)
+
 # disable monitor mode on sudden exit
 root.protocol("WM_DELETE_WINDOW", dis_exit)
+
+# run
 root.mainloop()

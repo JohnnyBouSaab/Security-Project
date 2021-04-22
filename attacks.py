@@ -14,12 +14,27 @@ def attack_launched(tree, scan_btn, stop_attack_btn):
     stop_attack_btn['state'] = NORMAL
     tree.state(("disabled",))
     tree.unbind("<Button-3>")
+    globs.spoof_option['state'] = DISABLED
+    globs.interface_list['state'] = DISABLED
 
 def stopped_attack(tree, scan_btn, stop_attack_btn, tree_on_right_click):
     tree.state(("!disabled",))
     tree.bind("<Button-3>", tree_on_right_click)
     stop_attack_btn['state'] = DISABLED
     scan_btn['state'] = NORMAL
+    globs.spoof_option['state'] = NORMAL
+    globs.interface_list['state'] = NORMAL
+
+# Spoofs mac
+def spoof(interface):
+    p = subprocess.Popen(('ifconfig ' + str(interface) + ' down').split(" "))
+    p.wait()
+    p = subprocess.Popen(('macchanger -r ' + str(interface)).split(" "))
+    p.wait()
+    p = subprocess.Popen(('ifconfig ' + str(interface) + ' up').split(" "))
+    p.wait()
+    return 0
+
 
 # Handshake
 def try_handshake(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right_click, passive=True):
@@ -29,6 +44,11 @@ def try_handshake(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_r
     tools.addToolInfo(T, "Executing handshake operation...\n\n")
     monitor_interface = tools.enable_monitor(interface)
     tools.addToolInfo(T, str(interface) + " is now in monitor mode, at " + monitor_interface + "\n\n")
+
+    # Spoof mac ?
+    if globs.spoof_mac.get() == 1:
+        spoof(monitor_interface)
+        tools.addToolInfo(T, "Mac of " + monitor_interface + " is now spoofed to a random mac for this attack.\n")
 
     current_item = tree.item(tree.focus())
 
@@ -121,6 +141,11 @@ def wps_attack(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_righ
     tools.addToolInfo(T, "Executing WPS attack operation...\n\n")
     monitor_interface = tools.enable_monitor(interface)
     tools.addToolInfo(T, str(interface) + " is now in monitor mode, at " + monitor_interface + "\n\n")
+
+    # Spoof mac ?
+    if globs.spoof_mac.get() == 1:
+        spoof(monitor_interface)
+        tools.addToolInfo(T, "Mac of " + monitor_interface + " is now spoofed to a random mac for this attack.\n")
 
     current_item = tree.item(tree.focus())
 

@@ -294,8 +294,8 @@ def crack_wpa(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right
     output_filename = f"crack_wpa_{wifi_name}.txt"
 
     with open(output_filename, "w+") as f_temp:
-        aircrack = subprocess.Popen([f"aircrack-ng -w {dict_filename} -b {mac} captured_{wifi_name}.cap"], shell=True, stdout=f_temp, stderr=f_temp)
-        # aircrack.wait()
+        aircrack = subprocess.Popen((f"aircrack-ng -w {dict_filename} -b {mac} captured_{wifi_name}.cap").split(" "), \
+                            stdin = subprocess.PIPE, cwd=cwd, universal_newlines=True, bufsize=1, stdout=f_temp, stderr=f_temp)
 
     pwd_found = False
     write_progress(T, 0)
@@ -324,6 +324,14 @@ def crack_wpa(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right
                         progress = float(percentages[0][:-1])
                         # show percentage in some way
                         update_progress(T, progress)
+
+        # User clicked stop attack
+        if globs.stop_attack:
+            globs.stop_attack = False
+            aircrack.terminate()
+            pwd_found = True # not really
+            tools.addToolInfo(T, "\nOperation canceled.\n\n")
+            break
 
         time.sleep(0.5)
 

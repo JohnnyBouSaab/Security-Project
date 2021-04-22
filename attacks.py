@@ -87,7 +87,8 @@ def try_handshake(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_r
                             # first, sleep a few secs before terminating the process
                             # to make sure the full handshake has been captured and logged to the file
                             time.sleep(5)
-                            airodump.terminate()
+                            # airodump.terminate()
+                            airodump.kill()
 
                             # rename handshake captured to save it for later
                             os.system('mv ' + cwd + '/packets_' + str(wifi_name) +'-01.cap' + ' captured_'+str(wifi_name) + ".cap")
@@ -98,7 +99,8 @@ def try_handshake(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_r
                             break
                         elif globs.stop_attack: # user clicked stopped attack button
                             globs.stop_attack = False
-                            airodump.terminate()
+                            # airodump.terminate()
+                            airodump.kill()
                             tools.addToolInfo(T, "Stopped handshake operation.\n\n")
                             captured = True # not really :)
                             break
@@ -115,8 +117,10 @@ def try_handshake(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_r
             root.update()
             if globs.stop_attack:
                 globs.stop_attack = False
-                airodump.terminate()
-                aireplay.terminate()
+                # airodump.terminate()
+                # aireplay.terminate()
+                airodump.kill()
+                aireplay.kill()
                 tools.addToolInfo(T, "Stopped handshake operation.\n\n")
                 captured = True # not really :)
                 break
@@ -249,7 +253,8 @@ def wps_attack(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_righ
                     # This should not be the case
                     elif "Restore previous session" in line:
                         globs.stop_attack = False
-                        reaver.terminate()
+                        # reaver.terminate()
+                        reaver.kill()
                         tools.addToolInfo(T, "Something went wrong, WPS attack cannot be executed on this machine.\n\n")
                         done = True 
                         break
@@ -257,7 +262,8 @@ def wps_attack(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_righ
                     # clicked stopped attack button
                     if globs.stop_attack: 
                         globs.stop_attack = False
-                        reaver.terminate()
+                        # reaver.terminate()
+                        reaver.kill()
                         tools.addToolInfo(T, "Stopped WPS attack operation.\n\n")
                         done = True 
                         break
@@ -334,7 +340,8 @@ def crack_wpa(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right
                     idx_right = line.index("]")
                     update_progress(T, 100.0)
                     tools.addToolInfo(T, "\nPassword found: " + line[idx_left:idx_right] + "\n\n")
-                    aircrack.terminate()
+                    # aircrack.terminate()
+                    aircrack.kill()
                     pwd_found = True
 
                     # break from the inner loop, so that we stop reading the file
@@ -353,7 +360,8 @@ def crack_wpa(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right
         # User clicked stop attack
         if globs.stop_attack:
             globs.stop_attack = False
-            aircrack.terminate()
+            # aircrack.terminate()
+            aircrack.kill()
             pwd_found = True # not really
             tools.addToolInfo(T, "\nOperation canceled.\n\n")
             break

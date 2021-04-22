@@ -92,7 +92,6 @@ def disable_monitor(interface):
 
 
 def execute_search(interface, info_area, tree):
-
     # current dir
     cwd = os.path.dirname(os.path.realpath(__file__)) 
 
@@ -159,8 +158,10 @@ def execute_search(interface, info_area, tree):
 
         # Check for stop scan flag
         if globs.stop_scanning:
-            airodump.terminate()
-            wash.terminate()
+            # airodump.terminate()
+            airodump.kill()
+            # wash.terminate()
+            wash.kill()
             globs.stop_scanning = False
             addToolInfo(info_area, "Search done.\n\n")
             if disable_monitor(interface) != -1:

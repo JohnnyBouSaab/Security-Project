@@ -8,7 +8,6 @@ from constants import *
 import pyfiglet
 import globs
 import attacks
-import page2
 
 from functools import partial
 

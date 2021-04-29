@@ -105,7 +105,7 @@ def execute_search(interface, info_area, tree):
     
     # wash for wps data
     with open('wps', "w") as wps_file:
-        wash = subprocess.Popen(('wash -i ' + interface).split(" "), \
+        wash = subprocess.Popen(('wash -i ' + interface + ' --all').split(" "), \
                                     stdout=wps_file, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, cwd=cwd)
                                     
     while True:
@@ -135,18 +135,26 @@ def execute_search(interface, info_area, tree):
                                 # found mac ?
                                 if wps_parts[0] == mac:
                                     lck = 'nl'
-                                    if wps_parts[4] != 'No':
-                                        lck = 'l'
-                                    networks[-1]['wps'] = wps_parts[3] + '('+lck+')'
-                                    networks[-1]['vendor'] = wps_parts[5]
+                                    if '1.0' in wps_parts[3] or '2.0' in wps_parts[3]:
+                                        if wps_parts[4] != 'No':
+                                            lck = 'l'
+                                        networks[-1]['wps'] = wps_parts[3] + '('+lck+')'
+                                        networks[-1]['vendor'] = wps_parts[5]
+                                    else: # WPS disabled, array is of different size. Only need vendor info in this case
+                                        networks[-1]['vendor'] = wps_parts[3]
 
                     # Recommend any attacks?
-                    # TP-link default pass attacks - router may have default 8-digit password
-                    if "tp-link" in str(name).lower() or "tp_link" in str(name).lower():
-                        networks[-1]['recommended'] = "8-digit Dictionary"
-                    # After some experience with these routers (vendors), many of them are vulnerable to pixie dust
-                    elif "RalinkTe" in networks[-1]['vendor'] or 'RealtekS' in networks[-1]['vendor']:  
-                        networks[-1]['recommended'] = "Pixie Dust"
+                    vuln = False
+                    for essid in globs.recommended_names:
+                        if essid in str(name).lower(): # By name
+                            networks[-1]['recommended'] = globs.recommended_names[essid]
+                            vuln = True
+                            break # One recommendation is enough, for now :)
+                    if not vuln: # Or by vendor
+                        for vendor in globs.recommended_vendors:
+                            if vendor in networks[-1]['vendor'].lower(): 
+                                networks[-1]['recommended'] = globs.recommended_vendors[vendor]
+                                break
 
             # update tree
             tree.delete(*tree.get_children())

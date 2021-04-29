@@ -14,4 +14,8 @@ Python requirements can be installed by running "python -r requirements.txt" on 
 
 Finally, run the tool by typing "python main.py"
 
-Enjoy and hack responsibly :D 
+Enjoy and hack responsibly :D
+
+Great thanks to owner of the following sheet: https://docs.google.com/spreadsheets/d/1tSlbqVQ59kGn8hgmwcPTHUECQ3o9YhXR91A_p7Nnj5Y/edit?pli=1#gid=2048815923
+Gave us some insight and recommendations to develop the tool's 'recommended attacks' feature.
+We also recommend checking it out for more detailed researched/tried routers and vendors, and common vulnerabilities and attack patterns found in them. 

@@ -174,6 +174,88 @@ def execute_search(interface, info_area, tree):
 
     return 0
 
+def list_stations(root, info_area, tree, sel_item, interface):
+    ap_mac = sel_item["values"][3]
+    channel = sel_item["values"][5]
+
+    # current dir
+    cwd = os.path.dirname(os.path.realpath(__file__))
+
+    # path of output csv file
+    out_path = os.path.join(cwd, "out_sta-01.csv")
+    if os.path.exists(out_path):
+        os.remove(out_path)
+
+    # preparing for search
+    addToolInfo(info_area, "Executing scan, please wait...\n\n")
+    interface_monitor = enable_monitor(interface)
+
+    if interface_monitor == -1: # should not be the case but to be safe...
+        stop_and_warn(None, 99)
+    else:
+        addToolInfo(info_area, str(interface) + " is now in monitor mode, at " + interface_monitor + "\n\n")
+
+
+    # start searching
+    addToolInfo(info_area, "Searching for stations...\n\n")
+
+    airodump = subprocess.Popen((f'airodump-ng --output-format csv -w out_sta --write-interval 1 --bssid {ap_mac} --channel {channel} ' + interface_monitor).split(" "), \
+                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, cwd=cwd)
+
+    # clear tree
+    tree.delete(*tree.get_children())
+    tree.update()
+
+    while True:
+        if os.path.exists(out_path):
+            with open(out_path, "r") as f: 
+                devices = []
+
+                for line in f.readlines()[2:]:
+                    parts = line.split(", ")
+                    if len(parts) > 7 or len(parts) < 5:
+                        # not a (valid) STATION line
+                        continue
+
+                    dev_mac_address = parts[0]
+
+                    #getting dev name from mac address, using Linux's `oui.txt` lookup table
+                    dev_name_line = subprocess.run(f"bash mac-lookup.sh {dev_mac_address}".split(" "), cwd=cwd, capture_output=True).stdout.decode()
+                    dev_name_parts = dev_name_line.split("\t\t")
+
+                    dev_name = dev_name_parts[1] if len(dev_name_parts) > 1 else "-"
+
+                    devices.append({
+                        'name': dev_name,
+                        'dev_mac_address': dev_mac_address,
+                        'ap_mac_address': parts[5],
+                        'power': parts[3]
+                    })
+
+            # update tree
+            tree.delete(*tree.get_children())
+            for dev in devices:
+                tree.insert('', 'end', values = (dev["name"], dev["power"], dev["dev_mac_address"], dev["ap_mac_address"]))
+            tree.update()
+
+        # Check for stop scan flag
+        if globs.stop_scanning:
+            # airodump.terminate()
+            airodump.kill()
+            globs.stop_scanning = False
+            addToolInfo(info_area, "Search done.\n\n")
+            if disable_monitor(interface_monitor) != -1:
+                addToolInfo(info_area, "Monitor mode disabled for " + str(interface_monitor) + "\n\n")
+            else:
+                stop_and_warn(None, 99)
+            break
+            
+        time.sleep(0.5)
+
+    return 0
+    
+
+
 
 def execute_scan(interface, info_area, tree):
     addToolInfo(info_area, "Executing scan, please wait...\n\n")

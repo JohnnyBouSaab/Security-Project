@@ -8,3 +8,5 @@ captured_*
 *_output
 wps
 passwords.lst
+out_sta-01.csv
+.vscode/

@@ -8,6 +8,7 @@ from constants import *
 import pyfiglet
 import globs
 import attacks
+import page2
 
 from functools import partial
 
@@ -26,6 +27,11 @@ def stop_scan():
     globs.stop_scanning = True
     scan_btn['state'] = NORMAL
     stop_btn['state'] = DISABLED
+
+def stop_scan2():
+    globs.stop_scanning = True
+    scan_btn2['state'] = NORMAL
+    stop_btn2['state'] = DISABLED
 
 
 def stop_attack():
@@ -55,6 +61,29 @@ def interface(new_interface):
     active_interface = new_interface
 
 
+# switching between pages
+def show_page(page_no):
+    if page_no == 1:
+        page1.lift()
+    
+    elif page_no == 2:
+        page2.lift()
+
+def search_for_stations(root, T, tree2, sel_item, active_interface):
+    global selected_ap
+
+    scan_btn2['state'] = DISABLED
+    stop_btn2['state'] = NORMAL
+    tree2.state(("disabled",))
+    tree2.unbind("<Button-3>",)
+
+    show_page(2)
+    list_stations(root, T, tree2, selected_ap, active_interface)
+
+    tree2.state(("!disabled",))
+    tree2.bind("<Button-3>", tree2_on_right_click)
+
+
 # USER INTERFACE SECTION
 
 # root = Tk()
@@ -70,6 +99,7 @@ globs.init()
 # styles: buttons, frames, treeview (when disabled)
 style = ttk.Style()
 style.configure("TButton", background="white", padding=(0, 3), font=('arial', 11, 'normal'), highlightthickness=0, borderwidth=0)
+style.configure("page.TFrame", height=300)
 style.configure("top.TFrame", background='black', height=100)
 style.configure("mid.TFrame", background='#939194', height=200)
 style.configure("bottom.TFrame", background='grey', height=400)
@@ -80,13 +110,43 @@ root.geometry('1100x600')
 root.configure(background='#000000')
 root.title('WiHack :D')
 
-# Frames & Layout
-top = ttk.Frame(root, style="top.TFrame")
-top.pack(fill=X)
-mid = ttk.Frame(root, style="mid.TFrame")
-mid.pack(fill=BOTH)
+# the window is divided into two sections:
+# - a top/mid container frame (which supports containing multiple pages and switching between them)
+# - a bottom frame for output
+
+# the top/mid container
+top_mid_container = ttk.Frame(root, style="page.TFrame")
+top_mid_container.pack(fill=BOTH)
+
+#the bottom container, stays the same when we switch pages
 bottom = ttk.Frame(root, style="bottom.TFrame")
 bottom.pack(fill=BOTH, expand=True)
+
+#pages
+page1 = ttk.Frame(top_mid_container, style="page.TFrame")
+page2 = ttk.Frame(top_mid_container, style="page.TFrame")
+
+page1.place(in_=top_mid_container, x=0, y=0, relwidth=1, relheight=1)
+page2.place(in_=top_mid_container, x=0, y=0, relwidth=1, relheight=1)
+
+page1.pack(fill=BOTH)
+# page2.pack(fill=BOTH)
+
+# show page 1 by default, as app entry point
+page1.lift()
+
+# page 1: top and mid secitons
+# kept the vars as `top` and `mid`, and not `top1` and `mid1`, in order not to break the original code
+top = ttk.Frame(page1, style="top.TFrame")
+top.pack(fill=X)
+mid = ttk.Frame(page1, style="mid.TFrame")
+mid.pack(fill=BOTH)
+
+# page 2: top and mid sections
+top2 = ttk.Frame(page2, style="top.TFrame")
+top2.pack(fill=X)
+mid2 = ttk.Frame(page2, style="mid.TFrame")
+mid2.pack(fill=BOTH)
 
 # Scan button
 scan_btn = ttk.Button(top, text='Scan', style="TButton", command=scan)
@@ -101,6 +161,26 @@ stop_btn['state'] = DISABLED
 stop_attack_btn = ttk.Button(top, text="Stop Attack", style="TButton", command = stop_attack)
 stop_attack_btn.pack(side=RIGHT, padx=15, pady=15)
 stop_attack_btn['state'] = DISABLED
+
+# Back button, to go back to page 1
+back_btn = ttk.Button(top2, text="Back", style="TButton", command = lambda: show_page(1))
+back_btn.pack(side=RIGHT, padx=15, pady=15)
+back_btn['state'] = NORMAL
+
+# Next button, go forward to page 2
+next_btn = ttk.Button(top, text="Next", style="TButton", command = lambda: show_page(2))
+next_btn.pack(side=RIGHT, padx=15, pady=15)
+next_btn['state'] = NORMAL
+
+#page 2 buttons
+# Scan button
+scan_btn2 = ttk.Button(top2, text='Scan', style="TButton", command=lambda: search_for_stations(root, T, tree2, selected_ap, active_interface))
+scan_btn2.pack(side=LEFT, padx=15, pady=15)
+
+# Stop Scan Button
+stop_btn2 = ttk.Button(top2, text="Stop", style="TButton", command = stop_scan2)
+stop_btn2.pack(side=LEFT, padx=15, pady=15)
+stop_btn2['state'] = DISABLED
 
 # Interface option
 variable = StringVar(root)
@@ -140,6 +220,19 @@ tree.column(6, width = 80)
 tree.column(7, width = 100)
 tree.column(8, width = 160)
 
+# tree 2
+tree2 = ttk.Treeview(mid2, columns = (1,2,3,4,5,6,7,8), show = "headings")
+tree2.pack(side = 'left')
+
+tree2.heading(1, text="Name")
+tree2.heading(2, text="Power")
+tree2.heading(3, text="Device Mac Address")
+tree2.heading(4, text="AP Mac Address")
+
+tree2.column(1, width = 160)
+tree2.column(1, width = 100)
+tree2.column(1, width = 300)
+
 scroll = ttk.Scrollbar(mid, orient="vertical", command=tree.yview)
 scroll.pack(side = 'right', fill = 'y')
 
@@ -149,8 +242,10 @@ tree.configure(yscrollcommand=scroll.set)
 
 #the right-click event
 selected_iid = None
+selected_ap = None
 
 def tree_on_right_click(event):
+    global selected_ap
     selected_iid = tree.identify_row(event.y)
 
     # The below fixes a bug when item is only right-clicked without a left click prior
@@ -165,6 +260,7 @@ def tree_on_right_click(event):
         # do something with the row item
         try:
             sel_item = tree.item(selected_iid)
+            selected_ap = sel_item
             name = sel_item["values"][0]
             mac_address = sel_item["values"][3]
             channel = sel_item["values"][5]
@@ -189,7 +285,12 @@ def tree_on_right_click(event):
             popup.add_command(label="Denial of Service", \
                 command = lambda: attacks.dos(root, scan_btn, stop_attack_btn, \
                     T, tree, active_interface, tree_on_right_click))
+
             popup.add_separator()
+
+            popup.add_command(label="View Connected Clients", \
+                command = lambda: search_for_stations(root, T, tree2, sel_item, active_interface))
+
 
             popup.tk_popup(event.x_root, event.y_root, 0)
         finally:
@@ -199,6 +300,51 @@ def tree_on_right_click(event):
 tree.bind("<Button-3>", tree_on_right_click)
 
 # END right click menu stuff
+
+
+# right-click menu for page 2
+# BEGIN right click menu stuff #2
+
+#the right-click event
+selected_iid2 = None
+
+def tree2_on_right_click(event):
+    selected_iid2 = tree2.identify_row(event.y)
+
+    # The below fixes a bug when item is only right-clicked without a left click prior
+    tree2.focus(selected_iid2) 
+
+    if selected_iid2:
+        # mouse pointer over item
+        # highlight the row (like for left-click)
+        tree2.selection_set(selected_iid2)
+        # contextMenu.post(event.x_root, event.y_root)
+
+        # do something with the row item
+        try:
+            sel_item = tree2.item(selected_iid2)
+
+            # pop-up menu on right click
+            popup = Menu(root, tearoff=0)
+
+            popup.add_command(label="De-authenticate Client", \
+                command = None)
+
+            popup.add_command(label="ARP Spoof this Client", \
+                command = None)
+
+            popup.add_separator()
+
+            popup.tk_popup(event.x_root, event.y_root, 0)
+        finally:
+            popup.grab_release()
+
+# attach event for when right-clicking a treeview element
+tree2.bind("<Button-3>", tree2_on_right_click)
+
+# END right click menu stuff #2
+
+
 
 # Debug / Info section, bottom
 S = ttk.Scrollbar(bottom)

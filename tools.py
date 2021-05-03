@@ -236,14 +236,15 @@ def list_stations(root, info_area, tree, sel_item, interface):
                     devices.append({
                         'name': dev_name,
                         'dev_mac_address': dev_mac_address,
-                        'ap_mac_address': parts[5],
-                        'power': parts[3]
+                        'ap_mac_address': parts[5].replace(",", ""),
+                        'power': parts[3],
+                        'channel': channel
                     })
 
             # update tree
             tree.delete(*tree.get_children())
             for dev in devices:
-                tree.insert('', 'end', values = (dev["name"], dev["power"], dev["dev_mac_address"], dev["ap_mac_address"]))
+                tree.insert('', 'end', values = (dev["name"], dev["power"], dev["dev_mac_address"], dev["ap_mac_address"], dev["channel"]))
             tree.update()
 
         # Check for stop scan flag

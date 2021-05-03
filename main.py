@@ -38,6 +38,11 @@ def stop_attack():
     stop_btn['state'] = DISABLED
     scan_btn['state'] = NORMAL
 
+def stop_attack2():
+    globs.stop_attack = True
+    stop_btn2['state'] = DISABLED
+    scan_btn2['state'] = NORMAL
+
 
 def scan():
     if len(active_interface) == 0: # no active interface:
@@ -167,9 +172,11 @@ back_btn.pack(side=RIGHT, padx=15, pady=15)
 back_btn['state'] = NORMAL
 
 # Next button, go forward to page 2
-next_btn = ttk.Button(top, text="Next", style="TButton", command = lambda: show_page(2))
-next_btn.pack(side=RIGHT, padx=15, pady=15)
-next_btn['state'] = NORMAL
+# I commented out this button since I don't think it is really needed  --Anis
+
+# next_btn = ttk.Button(top, text="Next", style="TButton", command = lambda: show_page(2))
+# next_btn.pack(side=RIGHT, padx=15, pady=15)
+# next_btn['state'] = NORMAL
 
 #page 2 buttons
 # Scan button
@@ -180,6 +187,11 @@ scan_btn2.pack(side=LEFT, padx=15, pady=15)
 stop_btn2 = ttk.Button(top2, text="Stop", style="TButton", command = stop_scan2)
 stop_btn2.pack(side=LEFT, padx=15, pady=15)
 stop_btn2['state'] = DISABLED
+
+# Stop Attack Button
+stop_attack_btn2 = ttk.Button(top2, text="Stop Attack", style="TButton", command = stop_attack2)
+stop_attack_btn2.pack(side=RIGHT, padx=15, pady=15)
+stop_attack_btn2['state'] = DISABLED
 
 # Interface option
 variable = StringVar(root)
@@ -227,10 +239,12 @@ tree2.heading(1, text="Name")
 tree2.heading(2, text="Power")
 tree2.heading(3, text="Device Mac Address")
 tree2.heading(4, text="AP Mac Address")
+tree2.heading(5, text="Channel")
 
 tree2.column(1, width = 160)
-tree2.column(1, width = 100)
-tree2.column(1, width = 300)
+tree2.column(2, width = 100)
+tree2.column(3, width = 300)
+tree2.column(4, width = 300)
 
 scroll = ttk.Scrollbar(mid, orient="vertical", command=tree.yview)
 scroll.pack(side = 'right', fill = 'y')
@@ -322,12 +336,15 @@ def tree2_on_right_click(event):
         # do something with the row item
         try:
             sel_item = tree2.item(selected_iid2)
+            dev_mac = sel_item["values"][2]
+            ap_mac = sel_item["values"][3]
+            channel = sel_item["values"][4]
 
             # pop-up menu on right click
             popup = Menu(root, tearoff=0)
 
             popup.add_command(label="De-authenticate Client", \
-                command = None)
+                command = lambda: attacks.deauth_client(dev_mac, ap_mac, channel, root, scan_btn2, stop_attack_btn2, T, tree2, active_interface, tree2_on_right_click))
 
             popup.add_command(label="ARP Spoof this Client", \
                 command = None)

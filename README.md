@@ -12,6 +12,8 @@ Some tools are required to run the app, such as aircrack-ng, reaver and macchang
 Latest version of Python is required (3.9), otherwise the tool might not function properly. 
 Python requirements can be installed by running "python -r requirements.txt" on your machine.
 
+For Ubuntu: Check `ubuntu_requirements.txt` for a list of dependencies you may need to install.
+
 Finally, run the tool by typing "python main.py"
 
 Enjoy and hack responsibly :D

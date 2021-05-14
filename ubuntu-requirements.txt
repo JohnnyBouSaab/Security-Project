@@ -1,0 +1,2 @@
+For arpspoof and dnsspoof:  sudo apt install dsniff
+For wash (the Kali tool):   Check instruction here: https://en.kali.tools/?p=346

@@ -324,7 +324,9 @@ def get_client_ip(dev_mac, T, tree2, active_interface):
 
     machine_ip = get_local_ip()
     ip_range = machine_ip[0: machine_ip.rindex(".") + 1] + "*"
-    # to make tests shorter for now
+
+    # NOTE - narrowing down the range of IPs, to make my tests shorter for now
+    # @Johnny - you may want to comment out the below line if your device IP is outside this range
     ip_range = '192.168.1.100-110'
 
     with open(out_path, 'w') as f:

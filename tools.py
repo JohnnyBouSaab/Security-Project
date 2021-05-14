@@ -7,6 +7,7 @@ import time
 import sys
 import os
 import globs
+import socket
 
 # shows info at text area in main app
 def addToolInfo(T, msg, tag=""):
@@ -100,7 +101,7 @@ def execute_search(interface, info_area, tree):
     if os.path.exists(out_path):
         os.remove(out_path)
 
-    airodump = subprocess.Popen(('airodump-ng --output-format csv -w out --write-interval 1 ' + interface).split(" "), \
+    airodump = subprocess.Popen(('airodump-ng --channel 10 --output-format csv -w out --write-interval 1 ' + interface).split(" "), \
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, cwd=cwd)
     
     # wash for wps data
@@ -218,11 +219,16 @@ def list_stations(root, info_area, tree, sel_item, interface):
         if os.path.exists(out_path):
             with open(out_path, "r") as f: 
                 devices = []
-
+                lines_read = 0
                 for line in f.readlines()[2:]:
                     parts = line.split(", ")
                     if len(parts) > 7 or len(parts) < 5:
                         # not a (valid) STATION line
+                        continue
+
+                    if lines_read == 0:
+                        # skip the header row
+                        lines_read +=1
                         continue
 
                     dev_mac_address = parts[0]
@@ -241,10 +247,12 @@ def list_stations(root, info_area, tree, sel_item, interface):
                         'channel': channel
                     })
 
+                    lines_read +=1
+
             # update tree
             tree.delete(*tree.get_children())
             for dev in devices:
-                tree.insert('', 'end', values = (dev["name"], dev["power"], dev["dev_mac_address"], dev["ap_mac_address"], dev["channel"]))
+                tree.insert('', 'end', values = (dev["name"], dev["power"], dev["dev_mac_address"], dev["ap_mac_address"], dev["channel"], "-"))
             tree.update()
 
         # Check for stop scan flag
@@ -262,7 +270,7 @@ def list_stations(root, info_area, tree, sel_item, interface):
         time.sleep(0.5)
 
     return 0
-    
+
 
 
 
@@ -280,3 +288,109 @@ def execute_scan(interface, info_area, tree):
     execute_search(interface_monitor, info_area, tree)
 
     return 0
+
+
+def getCurrentWifiSSID():
+    try:
+        a =  subprocess.check_output(["iwgetid -r"], stderr=subprocess.STDOUT, shell=True)
+        return a.decode('utf-8').replace("\n", "")
+        
+        # a =  subprocess.getoutput("iwgetid -r")
+        # return a
+    except:
+        raise RuntimeError("Could not get the Wifi SSID name. Does your system support the command `iwgetid -r`?")
+
+
+
+# TODO - this is the "noisy" active version of doing it. Maybe also provide a passive way, via just packet sniffing
+# using e.g. `tcpdump ether host 24:18:1D:62:8A:FE`
+
+def get_client_ip(dev_mac, T, tree2, active_interface):
+    """
+    Finds a target station's (private) IP address from its known MAC address
+
+    NB: Requires the attacker and target to be connected to the same wifi network.
+    """
+    # sample command:  nping -H -c 1 --arp-type arp-request --arp-target-mac 24:18:1D:62:8A:FE  192.168.1.* 
+
+    # current dir
+    cwd = os.path.dirname(os.path.realpath(__file__))
+
+    # path of output csv file
+    out_path = os.path.join(cwd, "temp_nping.txt")
+    if os.path.exists(out_path):
+        os.remove(out_path)
+
+
+    machine_ip = get_local_ip()
+    ip_range = machine_ip[0: machine_ip.rindex(".") + 1] + "*"
+    # to make tests shorter for now
+    ip_range = '192.168.1.100-110'
+
+    with open(out_path, 'w') as f:
+        nping = subprocess.Popen(f'nping -H -c 1 --arp-type arp-request --arp-target-mac {dev_mac} {ip_range}'.split(" "), \
+                                stdin=subprocess.PIPE, stdout=f, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, cwd=cwd)
+
+    ip_addr = ''
+
+    while nping.poll() is None:
+        with open(out_path, "r") as f:
+            lines = f.readlines()
+            for l in lines:
+                if dev_mac in l:
+                    # found!
+                    ip_addr = l.split("reply ")[1].split(" is at")[0]
+                    globs.stop_scanning=True
+                    addToolInfo(T, f'Found client IP address: {ip_addr}\n\n')
+
+                    # update tree entry
+                    # sel_item = tree2.item(tree2.focus())
+                    # sel_item["values"][5] = ip_addr
+
+                    # tree2.focus() gives us the row ID of the selected element
+                    tree2.set(tree2.focus(), 6, ip_addr)
+                    tree2.update()
+                    break
+
+        # Check for stop scan flag
+        if globs.stop_scanning:
+            # airodump.terminate()
+            nping.kill()
+            globs.stop_scanning = False
+            addToolInfo(T, "Search done.\n\n")
+            # if disable_monitor(interface_monitor) != -1:
+            #     addToolInfo(info_area, "Monitor mode disabled for " + str(interface_monitor) + "\n\n")
+            # else:
+            #     stop_and_warn(None, 99)
+            break
+            
+        time.sleep(5)
+    
+    if ip_addr == '':
+        addToolInfo(T, "Failed to find client IP address. Please try again.\n\n")
+        return None
+        
+    return ip_addr
+    
+# from https://www.codegrepper.com/code-examples/python/python+get+private+ip
+def get_local_ip():
+    """
+    Returns the (private) IP address of the user's machine.
+    """
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except Exception:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
+
+def get_router_ip():
+    # ip route show
+    out =  subprocess.getoutput("ip route show")
+    return out[out.index("default via ") + len("default via "): out.index(" dev")]
+    # or simply out.split(" ")[2] ? might be buggy though

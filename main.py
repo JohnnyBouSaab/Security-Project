@@ -8,10 +8,12 @@ from constants import *
 import pyfiglet
 import globs
 import attacks
+import threading
 
 from functools import partial
 
 active_interface = ""
+wifi_ssid_label = None
 
 def addInfo(msg):
     if(T):
@@ -26,6 +28,8 @@ def stop_scan():
     globs.stop_scanning = True
     scan_btn['state'] = NORMAL
     stop_btn['state'] = DISABLED
+
+    # wifi_ssid_label.text = 'Currently connected to Wifi ' + getCurrentWifiSSID()
 
 def stop_scan2():
     globs.stop_scanning = True
@@ -57,7 +61,6 @@ def scan():
         globs.interface_list['state'] = NORMAL
         tree.state(("!disabled",))
         tree.bind("<Button-3>", tree_on_right_click)
-
 
 
 def interface(new_interface):
@@ -152,6 +155,10 @@ top2.pack(fill=X)
 mid2 = ttk.Frame(page2, style="mid.TFrame")
 mid2.pack(fill=BOTH)
 
+#displaying SSID of the WiFi network we are currently connected to
+# wifi_ssid_label = ttk.Label(mid, text='Currently connected to Wifi ' + getCurrentWifiSSID())
+# wifi_ssid_label.pack(side='top')
+
 # Scan button
 scan_btn = ttk.Button(top, text='Scan', style="TButton", command=scan)
 scan_btn.pack(side=LEFT, padx=15, pady=15)
@@ -232,7 +239,7 @@ tree.column(7, width = 100)
 tree.column(8, width = 160)
 
 # tree 2
-tree2 = ttk.Treeview(mid2, columns = (1,2,3,4,5,6,7,8), show = "headings")
+tree2 = ttk.Treeview(mid2, columns = (1,2,3,4,5,6), show = "headings")
 tree2.pack(side = 'left')
 
 tree2.heading(1, text="Name")
@@ -240,11 +247,14 @@ tree2.heading(2, text="Power")
 tree2.heading(3, text="Device Mac Address")
 tree2.heading(4, text="AP Mac Address")
 tree2.heading(5, text="Channel")
+tree2.heading(6, text="(Private) IP Address")
 
 tree2.column(1, width = 160)
 tree2.column(2, width = 100)
-tree2.column(3, width = 300)
-tree2.column(4, width = 300)
+tree2.column(3, width = 250)
+tree2.column(4, width = 250)
+tree2.column(5, width = 100)
+tree2.column(6, width = 230)
 
 scroll = ttk.Scrollbar(mid, orient="vertical", command=tree.yview)
 scroll.pack(side = 'right', fill = 'y')
@@ -346,8 +356,12 @@ def tree2_on_right_click(event):
             popup.add_command(label="De-authenticate Client", \
                 command = lambda: attacks.deauth_client(dev_mac, ap_mac, channel, root, scan_btn2, stop_attack_btn2, T, tree2, active_interface, tree2_on_right_click))
 
-            popup.add_command(label="ARP Spoof this Client", \
-                command = None)
+            popup.add_command(label="Get IP address (Active)", \
+                command = lambda: call_in_background(lambda: get_client_ip(dev_mac, T, tree2, active_interface)))
+
+
+            popup.add_command(label="ARP Spoof + urlsnarf", \
+                command = lambda: call_in_background(lambda: attacks.arpspoof(dev_mac, ap_mac, channel, root, scan_btn2, stop_attack_btn2, T, tree2, active_interface, tree2_on_right_click)))
 
             popup.add_separator()
 
@@ -378,6 +392,9 @@ T.see(END)
 def dis_exit():
     disable_monitor(active_interface+"mon")
     root.destroy() 
+
+def call_in_background(f):
+    threading.Thread(target=f).start()
 
 
 # Spoof option

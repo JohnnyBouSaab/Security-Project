@@ -101,7 +101,7 @@ def execute_search(interface, info_area, tree):
     if os.path.exists(out_path):
         os.remove(out_path)
 
-    airodump = subprocess.Popen(('airodump-ng --channel 10 --output-format csv -w out --write-interval 1 ' + interface).split(" "), \
+    airodump = subprocess.Popen(('airodump-ng --output-format csv -w out --write-interval 1 ' + interface).split(" "), \
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, cwd=cwd)
     
     # wash for wps data

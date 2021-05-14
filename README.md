@@ -14,7 +14,7 @@ Python requirements can be installed by running "python -r requirements.txt" on 
 
 For Ubuntu: Check `ubuntu_requirements.txt` for a list of dependencies you may need to install.
 
-Finally, run the tool by typing "python main.py"
+Finally, run the tool by typing "python main.py". Make sure to not move the "main.py" outside its main directory when running, and don't mess with files the tool creates.
 
 Enjoy and hack responsibly :D
 
